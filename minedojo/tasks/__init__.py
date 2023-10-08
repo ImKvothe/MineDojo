@@ -1,7 +1,7 @@
 from __future__ import annotations
 import re
 import sys
-import importlib_resources
+import importlib.resources
 from itertools import product
 from omegaconf import OmegaConf
 
@@ -26,7 +26,7 @@ _logger.addHandler(_stream_handler)
 
 
 def _resource_file_path(fname) -> str:
-    with importlib_resources.path("minedojo.tasks.description_files", fname) as p:
+    with importlib.resources.path("minedojo.tasks.description_files", fname) as p:
         return str(p)
 
 
