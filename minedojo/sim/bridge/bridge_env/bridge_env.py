@@ -244,6 +244,7 @@ class BridgeEnv:
         ok = 0
         st_time = time.time()
         logger.debug(f"Sending mission init: {instance}")
+        print(f"Sending mission init: {instance}")
         while ok != 1:
             # roundtrip through etree to escape symbols correctly and make printing pretty
             mission_xml = etree.tostring(mission_xml_etree)

@@ -1,0 +1,47 @@
+sim.py>MineDojoSim define los parametros del server
+Luego le pone como parametro un SimSpec	con la version de Malmo.
+Finalmente inicia un bridge_env llamando a la clase BridgeEnv 
+
+
+Bridge_env se inicia con los valores y luego se inicia un seed instance manager.
+
+
+La clase seed instance manager es una librería para controlar las instancias de Minecraft. Se utiliza para encontar/terminar instancias de Malmo.
+Gets_instance (cls, pid) si no la encuentra la crea en un puerto diferente.
+Setup_instances setea tantas instancias como haga falta (agent_count - num instancias)
+Y startea las que sean necesarias. Esta funcion se llama en cada reset().
+Por cada instancia hace un clean_connection y un create_connection. Finalmente hace un quit_current_episode
+Clean_connection limpia la conexion a una instancia, no efectos la 1a vez. Si el cliente tiene un socket lo desconecta.
+Create_connection llama a create_instance_socket que inicia un socket, lo setea y se conecta al host (localhost)
+
+
+En el reset se llama a send mission al agente master, y hay un TODO comentado para mas agentes.
+En send mission tambien hay un agent_count = 1, envia una mission XML a la instancia.
+
+
+La funcion step hace un step por cada instancia.
+
+
+Close cierra todas las instancias.
+
+
+Preguntar sobre _query_first_obs
+
+
+Todos estos tienen agent_Count = 1, y un TODO comentado.
+Que es una instancia en nuestro caso?  A subprocess wrapper que mantiene una referencia a un subproceso minecraft y también permite el cierre estable y el lanzamiento de tales subprocesos
+a través de diferentes plataformas.
+
+The Minecraft instance class funciona lanzando dos subprocesos:
+El subproceso Malmo, y un subproceso observador con acceso a los IDs de proceso tanto del proceso padre como del subproceso Malmo.
+Si el proceso padre muere, matará al subproceso, y luego a sí mismo.
+
+
+Minecraft Instance obtiene Pid del lanzador, lanza minecraft (ver launch_minecraft) crea un vigilante para asegurar que las cosas se limpian, Inicia malmoEnvSErver (preguntar)
+
+MalmoEnvServer -> serve() starts the minecraft server
+
+FOR MULTIAGENT: CHECK initAgent() for multirewards, handleLan!!! -> Check in LAN or server (preguntar), execute() -> we should be joining a server
+
+Comprobar Logs
+

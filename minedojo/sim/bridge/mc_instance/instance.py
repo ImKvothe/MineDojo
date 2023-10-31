@@ -18,6 +18,7 @@ import shutil
 import logging
 
 from ...bridge import utils as U
+from datetime import date
 
 __all__ = ["MinecraftInstance"]
 
@@ -236,8 +237,9 @@ class MinecraftInstance:
                 if not os.path.exists(os.path.join(logdir, "logs")):
                     os.makedirs((os.path.join(logdir, "logs")))
 
+                today = date.today()
                 file_path = os.path.join(
-                    logdir, "logs", f"mc_{self._target_port - 9000}.log"
+                    logdir, "logs", f"mc_{today}_{self._target_port - 9000}.log"
                 )
 
                 logger.info(f"Logging output of Minecraft to {file_path}")

@@ -203,7 +203,7 @@ class MineDojoSim(gym.Env):
                 ), f"Invalid biome id {specified_biome}"
             else:
                 raise ValueError(f"invalid biome type {specified_biome}")
-
+        print("entering MineDojoSim")
         # configure obs handlers
         obs_handlers = [
             handlers.POVObservation(image_size, False),
