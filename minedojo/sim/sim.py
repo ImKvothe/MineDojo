@@ -13,9 +13,11 @@ from .bridge import BridgeEnv
 from .cmd_executor import CMDExecutor
 from .config_sim_spec import SimSpec
 from .inventory import InventoryItem, parse_inventory_item
+from .bridge.mc_instance.instance import MALMO_VERSION
 
 
 class MineDojoSim(gym.Env):
+    MALMO_VERSION = MALMO_VERSION
     """An environment wrapper for MineDojo simulation.
 
     Args:
@@ -367,7 +369,7 @@ class MineDojoSim(gym.Env):
         server_quit_handlers = []
         self._sim_spec = SimSpec(
             sim_name=sim_name,
-            agent_count=1,
+            agent_count=2,
             obs_handlers=obs_handlers,
             action_handlers=action_handlers,
             agent_handlers=agent_handlers,
@@ -416,7 +418,34 @@ class MineDojoSim(gym.Env):
         episode_id = str(uuid.uuid4())
 
         xml = etree.fromstring(self._sim_spec.to_xml(episode_id))
-        raw_obs = self._bridge_env.reset(episode_id, [xml])[0]
+        agent_xmls = []
+        for role in range(self._sim_spec._agent_count):
+            agent_xml = deepcopy(xml)
+            agent_xml_etree = etree.fromstring(
+                """<MissionInit xmlns="http://ProjectMalmo.microsoft.com"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   SchemaVersion="" PlatformVersion=""" + '\"' + MALMO_VERSION + '\"' +
+                """>
+                <ExperimentUID>{ep_uid}</ExperimentUID>
+                <ClientRole>{role}</ClientRole>
+                <ClientAgentConnection>
+                <ClientIPAddress>127.0.0.1</ClientIPAddress>
+                <ClientMissionControlPort>0</ClientMissionControlPort>
+                <ClientCommandsPort>0</ClientCommandsPort>
+                <AgentIPAddress>127.0.0.1</AgentIPAddress>
+                <AgentMissionControlPort>0</AgentMissionControlPort>
+                <AgentVideoPort>0</AgentVideoPort>
+                <AgentDepthPort>0</AgentDepthPort>
+                <AgentLuminancePort>0</AgentLuminancePort>
+                <AgentObservationsPort>0</AgentObservationsPort>
+                <AgentRewardsPort>0</AgentRewardsPort>
+                <AgentColourMapPort>0</AgentColourMapPort>
+                </ClientAgentConnection>
+                </MissionInit>""".format(ep_uid=episode_id, role=role))
+            agent_xml_etree.insert(0, agent_xml)    
+            agent_xmls.append(agent_xml_etree)
+
+        raw_obs = self._bridge_env.reset(episode_id, agent_xmls)[0]
         obs, info = self._process_raw_obs(raw_obs)
         self._prev_obs, self._prev_info = deepcopy(obs), deepcopy(info)
         return obs
@@ -434,9 +463,20 @@ class MineDojoSim(gym.Env):
             - ``bool`` - Whether the episode has ended.
             - ``dict`` - Contains auxiliary diagnostic information (helpful for debugging, and sometimes learning).
         """
-        self._prev_action = deepcopy(action)
-        action_xml = self._action_obj_to_xml(action)
-        step_tuple = self._bridge_env.step([action_xml])
+        print("entrando a step")
+        #print(action)
+        i = 0
+        actions = list(action.items())
+        actions_xml = []
+        while i < len(actions):
+            action0 = list(action.items())[0][1]
+            self._prev_action = deepcopy(action0)
+            action_xml = self._action_obj_to_xml(action0)
+            #print(action_xml)
+            actions_xml.append(action_xml)
+            i = i + 1 
+        #print(actions_xml)
+        step_tuple = self._bridge_env.step(actions_xml)
         step_success, raw_obs = step_tuple.step_success, step_tuple.raw_obs
         if not step_success:
             # when step failed, return prev obs

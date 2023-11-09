@@ -1,5 +1,4 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no" ?>
-<MissionInit xmlns="http://ProjectMalmo.microsoft.com" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" SchemaVersion="" PlatformVersion="{{MALMO_VERSION}}">
     <Mission xmlns="http://ProjectMalmo.microsoft.com">
         <About>
             <Summary>{{_sim_name}}</Summary>
@@ -82,23 +81,4 @@
         </AgentSection>
         {% endfor %}
     </Mission>
-    <ExperimentUID>
-        {{_episode_id}}
-    </ExperimentUID>
-    <ClientRole>
-        0
-    </ClientRole>
-    <ClientAgentConnection>
-        <ClientIPAddress>127.0.0.1</ClientIPAddress>
-        <ClientMissionControlPort>0</ClientMissionControlPort>
-        <ClientCommandsPort>0</ClientCommandsPort>
-        <AgentIPAddress>127.0.0.1</AgentIPAddress>
-        <AgentMissionControlPort>0</AgentMissionControlPort>
-        <AgentVideoPort>0</AgentVideoPort>
-        <AgentDepthPort>0</AgentDepthPort>
-        <AgentLuminancePort>0</AgentLuminancePort>
-        <AgentObservationsPort>0</AgentObservationsPort>
-        <AgentRewardsPort>0</AgentRewardsPort>
-        <AgentColourMapPort>0</AgentColourMapPort>
-    </ClientAgentConnection>
-</MissionInit>
+

@@ -46,11 +46,11 @@ class BridgeEnv:
     def __init__(
         self,
         *,
-        agent_count: int = 1,
+        agent_count: int = 2,
         is_fault_tolerant: bool = True,
         seed: Optional[int] = None,
     ):
-        assert agent_count == 1, "TODO"
+        assert agent_count == 2, "TODO"
         self._agent_count = agent_count
         self._rng = np.random.default_rng(seed=seed)
         self._instances: List[MinecraftInstance] = []
@@ -64,10 +64,9 @@ class BridgeEnv:
     def is_terminated(self):
         return self._terminated
 
-    def reset(self, episode_uid: str, agent_xmls: List[etree.Element]):
+    def reset(self, episode_uid: str, agent_xmls):
         # seed the manager
         self._seed_instance_manager()
-
         # Start missing instances, quit episodes, and make socket connections
         self._setup_instances()
         self._terminated = False
@@ -78,10 +77,48 @@ class BridgeEnv:
         self._send_mission(
             self._instances[0], agent_xmls[0], self._get_token(0, episode_uid)
         )  # Master
+
+        
         if self._agent_count > 1:
-            raise ValueError("TODO")
+            mc_server_ip, mc_server_port = self._TO_MOVE_find_ip_and_port(self._instances[0], self._get_token(1, episode_uid))
+            self._setup_master_slave_connection(agent_xmls[1], mc_server_ip, mc_server_port)
+            self._send_mission(
+            self._instances[1], agent_xmls[1], self._get_token(1, episode_uid)
+            )  
 
         return self._query_first_obs()
+    
+    def _TO_MOVE_find_ip_and_port(self, instance: MinecraftInstance, token:str):
+
+        master_host = instance.host
+        # try until you get something valid
+        port = 0
+        tries = 0
+        start_time = time.time()
+
+        logger.info("Attempting to find_ip: {instance}".format(instance=instance))
+        while port == 0 and time.time() - start_time <= MAX_WAIT:
+            instance.client_socket_send_message(("<Find>" + token + "</Find>").encode())
+            reply = instance.client_socket_recv_message()
+            port, = struct.unpack('!I', reply)
+            tries += 1
+            time.sleep(0.1)
+        if port == 0:
+            raise Exception("Failed to find master server port!")
+        self.integratedServerPort = port  # should/can this even be cached?
+        
+        # go ahead and set port for all non-controller clients
+        print("new port: " + str(port))
+        print("old port: " + str(instance.port))
+        return master_host, str(port)
+    
+    def _setup_master_slave_connection(self, slave_xml: etree.Element,
+                                        mc_server_ip:str, mc_server_port:str):
+        e = etree.Element(
+            "{http://ProjectMalmo.microsoft.com}" + "MinecraftServerConnection",
+            attrib={"address": str(mc_server_ip), "port": str(mc_server_port)},
+        )
+        slave_xml.insert(2, e)
 
     def step(self, action_xmls: List[str]):
         """
@@ -90,6 +127,9 @@ class BridgeEnv:
         Args:
             action_xmls: A list of prepared action XMLs.
         """
+        print("entro al step de bridge env")
+        print(action_xmls[0])
+
         assert len(action_xmls) == len(
             self._instances
         ), f"Expect {len(self._instances)} action XMLs, received {len(action_xmls)} instead"
@@ -234,7 +274,7 @@ class BridgeEnv:
         instance: MinecraftInstance,
         mission_xml_etree: etree.Element,
         token_in: str,
-        agent_count: int = 1,
+        agent_count: int = 2,
         seed: Optional[int] = None,
     ):
         """

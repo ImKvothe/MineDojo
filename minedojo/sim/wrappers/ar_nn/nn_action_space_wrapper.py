@@ -21,14 +21,17 @@ class NNActionSpaceWrapper(gym.Wrapper):
         discretized_camera_interval: Union[int, float] = 15,
         strict_check: bool = True,
     ):
-        assert (
-            "equip" in env.action_space.keys()
-            and "place" in env.action_space.keys()
-            and "swap_slot" not in env.action_space.keys()
-        ), "please use this wrapper with event_level_control = True"
-        assert (
-            "inventory" in env.observation_space.keys()
-        ), f"missing inventory from obs space"
+        agents_act = env.action_space
+        print(agents_act)
+        for agent in agents_act:
+            assert (
+                "equip" in env.action_space[agent].keys()
+                and "place" in env.action_space[agent].keys()
+                and "swap_slot" not in env.action_space[agent].keys()
+            ), "please use this wrapper with event_level_control = True"
+            assert (
+                "inventory" in env.observation_space[agent].keys()
+            ), f"missing inventory from obs space"
         super().__init__(env=env)
 
         n_pitch_bins = math.ceil(360 / discretized_camera_interval) + 1
@@ -67,86 +70,92 @@ class NNActionSpaceWrapper(gym.Wrapper):
         assert self.action_space.contains(action)
         destroy_item = (False, None)
         noop = self.env.action_space.no_op()
+        agents_act = self.action_space
+        items = list(noop.items())
+        i = 0
+        #print(len(items))
+        #print(items[0][1]["forward"])
+        while i < len(items):
+            # ------ parse main actions ------
+            # parse forward and back
+            if action[0] == 1:
+                list(noop.items())[i][1]["forward"] = 1
+            elif action[0] == 2:
+                list(noop.items())[i][1]["back"] = 1
+            # parse left and right
+            if action[1] == 1:
+                list(noop.items())[i][1]["left"] = 1
+            elif action[1] == 2:
+                list(noop.items())[i][1]["right"] = 1
+            # parse jump sneak and sprint
+            if action[2] == 1:
+                list(noop.items())[i][1]["jump"] = 1
+            elif action[2] == 2:
+                list(noop.items())[i][1]["sneak"] = 1
+            elif action[2] == 3:
+                list(noop.items())[i][1]["sprint"] = 1
+            # parse camera pitch
+            list(noop.items())[i][1]["camera"][0] = float(action[3]) * self._cam_interval + (-180)
+            # parse camera yaw
+            list(noop.items())[i][1]["camera"][1] = float(action[4]) * self._cam_interval + (-180)
 
-        # ------ parse main actions ------
-        # parse forward and back
-        if action[0] == 1:
-            noop["forward"] = 1
-        elif action[0] == 2:
-            noop["back"] = 1
-        # parse left and right
-        if action[1] == 1:
-            noop["left"] = 1
-        elif action[1] == 2:
-            noop["right"] = 1
-        # parse jump sneak and sprint
-        if action[2] == 1:
-            noop["jump"] = 1
-        elif action[2] == 2:
-            noop["sneak"] = 1
-        elif action[2] == 3:
-            noop["sprint"] = 1
-        # parse camera pitch
-        noop["camera"][0] = float(action[3]) * self._cam_interval + (-180)
-        # parse camera yaw
-        noop["camera"][1] = float(action[4]) * self._cam_interval + (-180)
-
-        # ------ parse functional actions ------
-        fn_action = action[5]
-        # note that 0 is no_op
-        if fn_action == 0:
-            pass
-        elif fn_action == 1:
-            noop["use"] = 1
-        elif fn_action == 2:
-            noop["drop"] = 1
-        elif fn_action == 3:
-            noop["attack"] = 1
-        elif fn_action == 4:
-            item_to_craft = MC.ALL_CRAFT_SMELT_ITEMS[action[6]]
-            if item_to_craft in MC.ALL_HAND_CRAFT_ITEMS_NN_ACTIONS:
-                noop["craft"] = item_to_craft
-            elif item_to_craft in MC.ALL_TABLE_CRAFT_ONLY_ITEMS_NN_ACTIONS:
-                noop["craft_with_table"] = item_to_craft
-            elif item_to_craft in MC.ALL_SMELT_ITEMS_NN_ACTIONS:
-                noop["smelt"] = item_to_craft
-            elif self._strict_check:
-                raise ValueError(f"Unknown item {item_to_craft} to craft/smelt!")
-        elif fn_action == 5:
-            assert action[7] in list(range(MC.N_INV_SLOTS))
-            item_id = self._inventory_names[action[7]].replace(" ", "_")
-            if item_id == "air":
-                if self._strict_check:
-                    raise ValueError(
-                        "Trying to equip air, raise error with strict check."
-                        "You shouldn't execute this action, maybe something wrong with the mask!"
-                    )
+            # ------ parse functional actions ------
+            fn_action = action[5]
+            # note that 0 is no_op
+            if fn_action == 0:
+                pass
+            elif fn_action == 1:
+                list(noop.items())[i][1]["use"] = 1
+            elif fn_action == 2:
+                list(noop.items())[i][1]["drop"] = 1
+            elif fn_action == 3:
+                list(noop.items())[i][1]["attack"] = 1
+            elif fn_action == 4:
+                item_to_craft = MC.ALL_CRAFT_SMELT_ITEMS[action[6]]
+                if item_to_craft in MC.ALL_HAND_CRAFT_ITEMS_NN_ACTIONS:
+                    list(noop.items())[i][1]["craft"] = item_to_craft
+                elif item_to_craft in MC.ALL_TABLE_CRAFT_ONLY_ITEMS_NN_ACTIONS:
+                    list(noop.items())[i][1]["craft_with_table"] = item_to_craft
+                elif item_to_craft in MC.ALL_SMELT_ITEMS_NN_ACTIONS:
+                    list(noop.items())[i][1]["smelt"] = item_to_craft
+                elif self._strict_check:
+                    raise ValueError(f"Unknown item {item_to_craft} to craft/smelt!")
+            elif fn_action == 5:
+                assert action[7] in list(range(MC.N_INV_SLOTS))
+                item_id = self._inventory_names[action[7]].replace(" ", "_")
+                if item_id == "air":
+                    if self._strict_check:
+                        raise ValueError(
+                            "Trying to equip air, raise error with strict check."
+                            "You shouldn't execute this action, maybe something wrong with the mask!"
+                        )
+                else:
+                    list(noop.items())[i][1]["equip"] = item_id
+            elif fn_action == 6:
+                assert action[7] in list(range(MC.N_INV_SLOTS))
+                item_id = self._inventory_names[action[7]].replace(" ", "_")
+                if item_id == "air":
+                    if self._strict_check:
+                        raise ValueError(
+                            "Trying to place air, raise error with strict check."
+                            "You shouldn't execute this action, maybe something wrong with the mask!"
+                        )
+                else:
+                    list(noop.items())[i][1]["place"] = item_id
+            elif fn_action == 7:
+                assert action[7] in list(range(MC.N_INV_SLOTS))
+                item_id = self._inventory_names[action[7]].replace(" ", "_")
+                if item_id == "air":
+                    if self._strict_check:
+                        raise ValueError(
+                            "Trying to destroy air, raise error with strict check."
+                            "You shouldn't execute this action, maybe something wrong with the mask!"
+                        )
+                else:
+                    destroy_item = (True, action[7])
             else:
-                noop["equip"] = item_id
-        elif fn_action == 6:
-            assert action[7] in list(range(MC.N_INV_SLOTS))
-            item_id = self._inventory_names[action[7]].replace(" ", "_")
-            if item_id == "air":
-                if self._strict_check:
-                    raise ValueError(
-                        "Trying to place air, raise error with strict check."
-                        "You shouldn't execute this action, maybe something wrong with the mask!"
-                    )
-            else:
-                noop["place"] = item_id
-        elif fn_action == 7:
-            assert action[7] in list(range(MC.N_INV_SLOTS))
-            item_id = self._inventory_names[action[7]].replace(" ", "_")
-            if item_id == "air":
-                if self._strict_check:
-                    raise ValueError(
-                        "Trying to destroy air, raise error with strict check."
-                        "You shouldn't execute this action, maybe something wrong with the mask!"
-                    )
-            else:
-                destroy_item = (True, action[7])
-        else:
-            raise ValueError(f"Unknown value {fn_action} for function action")
+                raise ValueError(f"Unknown value {fn_action} for function action")
+            i = i + 1
         return noop, destroy_item
 
     def reverse_action(self, action):
@@ -261,6 +270,7 @@ class NNActionSpaceWrapper(gym.Wrapper):
         return obs
 
     def step(self, action: Sequence[int]):
+        print("entro al wrapper")
         malmo_action, destroy_item = self.action(action)
         destroy_item, destroy_slot = destroy_item
         if destroy_item:

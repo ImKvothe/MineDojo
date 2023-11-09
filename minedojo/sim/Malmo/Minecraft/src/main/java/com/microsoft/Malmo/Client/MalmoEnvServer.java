@@ -134,6 +134,7 @@ public class MalmoEnvServer implements IWantToQuit {
      */
     public void serve() throws IOException {
         ServerSocket serverSocket = new ServerSocket(port);
+        System.out.println("Serve port:" + port);
         serverSocket.setPerformancePreferences(0,2,1);
 
         while (true) {
@@ -153,6 +154,7 @@ public class MalmoEnvServer implements IWantToQuit {
                                 try {
                                     hdr = din.readInt();
                                 } catch (EOFException e) {
+                                    System.out.println("Incoming socket connection closed, likely by peer (without Exit message)");
                                     LogHelper.debug("Incoming socket connection closed, likely by peer (without Exit message): " + e);
                                     socket.close();
                                     break;
@@ -272,8 +274,9 @@ public class MalmoEnvServer implements IWantToQuit {
         
         DataInputStream din = new DataInputStream(socket.getInputStream());
         int hdr = din.readInt();
+        System.out.println(String.valueOf(hdr));
         if (hdr <= 0 || hdr > hello.length() + 8) // Version number may be somewhat longer in future.
-            throw new IOException("Invalid MalmoEnv hello header length");
+           throw new IOException("Invalid MalmoEnv hello header length" + String.valueOf(hdr));
         byte[] data = new byte[hdr];
         din.readFully(data);
         if (!new String(data).startsWith(hello + version))

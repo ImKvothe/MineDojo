@@ -25,40 +25,47 @@ class DeltaInventoryWrapper(gym.Wrapper):
         n_decreased: int = 4,
         default_item_name: str = "air",
     ):
-        assert "inventory" in env.observation_space.keys()
-        assert "masks" in env.observation_space.keys()
-        assert "craft_smelt" in env.observation_space["masks"].keys()
-        assert isinstance(
-            env.action_space, spaces.MultiDiscrete
-        ), "please use this wrapper with `NNActionSpaceWrapper!`"
-        assert (
-            len(env.action_space.nvec) == 8
-        ), "please use this wrapper with `NNActionSpaceWrapper!`"
-        assert op_action_idx < len(env.action_space.nvec)
-        assert craft_arg_idx < len(env.action_space.nvec)
+        agent_obs = env.observation_space.keys()
+        for agent in agent_obs:
+            assert "inventory" in env.observation_space[agent].keys()
+            assert "masks" in env.observation_space[agent].keys()
+            assert "craft_smelt" in env.observation_space[agent]["masks"].keys()
+            assert isinstance(
+                env.action_space, spaces.MultiDiscrete
+            ), "please use this wrapper with `NNActionSpaceWrapper!`"
+            assert (
+                len(env.action_space.nvec) == 8
+            ), "please use this wrapper with `NNActionSpaceWrapper!`"
+            assert op_action_idx < len(env.action_space.nvec)
+            assert craft_arg_idx < len(env.action_space.nvec)
         super().__init__(env=env)
-        obs_space = env.observation_space
-        obs_space["delta_inv"] = spaces.Dict(
-            {
-                "inc_name_by_craft": spaces.Text(shape=(n_increased,)),
-                "inc_quantity_by_craft": spaces.Box(
-                    low=0, high=64, shape=(n_increased,), dtype=np.float32
-                ),
-                "dec_name_by_craft": spaces.Text(shape=(n_decreased,)),
-                "dec_quantity_by_craft": spaces.Box(
-                    low=0, high=64, shape=(n_decreased,), dtype=np.float32
-                ),
-                "inc_name_by_other": spaces.Text(shape=(n_increased,)),
-                "inc_quantity_by_other": spaces.Box(
-                    low=0, high=64, shape=(n_increased,), dtype=np.float32
-                ),
-                "dec_name_by_other": spaces.Text(shape=(n_decreased,)),
-                "dec_quantity_by_other": spaces.Box(
-                    low=0, high=64, shape=(n_decreased,), dtype=np.float32
-                ),
-            }
-        )
-        self.observation_space = obs_space
+
+
+        multi_obs_space = {}
+        for agent in agent_obs:
+            obs_space = env.observation_space[agent]
+            obs_space["delta_inv"] = spaces.Dict(
+                {
+                    "inc_name_by_craft": spaces.Text(shape=(n_increased,)),
+                    "inc_quantity_by_craft": spaces.Box(
+                        low=0, high=64, shape=(n_increased,), dtype=np.float32
+                    ),
+                    "dec_name_by_craft": spaces.Text(shape=(n_decreased,)),
+                    "dec_quantity_by_craft": spaces.Box(
+                        low=0, high=64, shape=(n_decreased,), dtype=np.float32
+                    ),
+                    "inc_name_by_other": spaces.Text(shape=(n_increased,)),
+                    "inc_quantity_by_other": spaces.Box(
+                        low=0, high=64, shape=(n_increased,), dtype=np.float32
+                    ),
+                    "dec_name_by_other": spaces.Text(shape=(n_decreased,)),
+                    "dec_quantity_by_other": spaces.Box(
+                        low=0, high=64, shape=(n_decreased,), dtype=np.float32
+                    ),
+                }
+            )
+            multi_obs_space[agent] = obs_space
+        self.observation_space = multi_obs_space
         self._default_item_name = default_item_name
         self._n_increased = n_increased
         self._n_decreased = n_decreased

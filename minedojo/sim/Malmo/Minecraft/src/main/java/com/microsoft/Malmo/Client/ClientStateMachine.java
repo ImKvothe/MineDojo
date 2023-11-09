@@ -1035,6 +1035,7 @@ public class ClientStateMachine extends StateMachine implements IMalmoMessageLis
         {
             // First, find the starting position we ought to have:
             List<AgentSection> agents = currentMissionInit().getMission().getAgentSection();
+            System.out.println(agents.size());
             if (agents == null || agents.size() <= currentMissionInit().getClientRole())
                 return true;    // This should never happen.
             AgentSection as = agents.get(currentMissionInit().getClientRole());
@@ -1162,7 +1163,7 @@ public class ClientStateMachine extends StateMachine implements IMalmoMessageLis
             //if (agents == null || agents.size() <= currentMissionInit().getClientRole())
             //    throw new Exception("No agent section for us!"); // TODO
             this.agentName = agents.get(currentMissionInit().getClientRole()).getName();
-
+            // System.out.println("Entrando aquí IMPORTATNE");
             if (agents.size() > 1 && currentMissionInit().getClientRole() != 0)
             {
                 // Multi-agent mission, we should be joining a server.
@@ -1175,6 +1176,7 @@ public class ClientStateMachine extends StateMachine implements IMalmoMessageLis
                 boolean namesMatch = (player == null) || Minecraft.getMinecraft().player.getName().equals(this.agentName);
                 if (!namesMatch)
                 {
+                    System.out.println("Names do not match");
                     // The name of our agent no longer matches the agent in our game profile -
                     // safest way to update is to log out and back in again.
                     // This hangs so just warn instead about the miss-match and proceed.
@@ -1210,7 +1212,9 @@ public class ClientStateMachine extends StateMachine implements IMalmoMessageLis
                 // Do we need to open to LAN?
                 if (Minecraft.getMinecraft().isSingleplayer() && !Minecraft.getMinecraft().getIntegratedServer().getPublic())
                 {
+                    System.out.println("Single player");
                     String portStr = "";
+                    System.out.println(hc);
                     if (hc == null)
                         portStr = Minecraft.getMinecraft().getIntegratedServer().shareToLAN(GameType.SURVIVAL, true); // Set to true to stop spam kicks.
                     else{
@@ -1228,6 +1232,7 @@ public class ClientStateMachine extends StateMachine implements IMalmoMessageLis
                             serv.mc.player.setPermissionLevel(true ? 4 : 0);
                             
                             serv.getPlayerList().maxPlayers = hc.getMaxPlayers() + 1; //TODO: for multi-agent add more.
+                            System.out.println(serv.getPlayerList().maxPlayers);
                             portStr = i + "";
 
                         } catch (final IOException var6)
@@ -1239,12 +1244,14 @@ public class ClientStateMachine extends StateMachine implements IMalmoMessageLis
                         }
                     }
                     ClientStateMachine.this.integratedServerPort = Integer.valueOf(portStr);
+                    System.out.println(portStr);
                 }
-
+                System.out.println("Handle Lan");
                 TCPUtils.Log(Level.INFO,"Integrated server port: " + ClientStateMachine.this.integratedServerPort);
                 msc.setPort(ClientStateMachine.this.integratedServerPort);
                 msc.setAddress(address);
-
+                System.out.println("Integrated port: " + ClientStateMachine.this.integratedServerPort);
+                System.out.println("adress: " + address);
                 if (envServer != null) {
                     envServer.notifyIntegrationServerStarted(ClientStateMachine.this.integratedServerPort);
                 }

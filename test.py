@@ -6,11 +6,16 @@ if __name__ == "__main__":
     print(env.task_guidance)
 
     env.reset()
-   
+    done = 0
     for _ in range(100):
-        obs, reward, done, info = env.step(env.action_space.no_op())
+        actions = env.action_space.no_op()
+        print(actions)
+        actions[0] = 1
+        actions[4] = 24
+        print(actions)
+        obs, reward, done, info = env.step(actions)
         if done:
             print("Finished")
-            break;
+            break
     env.close()
 

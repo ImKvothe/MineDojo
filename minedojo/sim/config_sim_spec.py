@@ -22,7 +22,7 @@ class SimSpec:
         self,
         *,
         sim_name: str,
-        agent_count: int = 1,
+        agent_count: int = 2,
         obs_handlers: List[TranslationHandler],
         action_handlers: List[TranslationHandler],
         agent_handlers: List[Handler],
@@ -34,7 +34,7 @@ class SimSpec:
         seed: Optional[int] = None,
     ):
         self._sim_name = sim_name
-        assert agent_count == 1, "TODO"
+        assert agent_count == 2, "TODO"
         self._agent_count = agent_count
         self._agent_names = [f"agent_{role}" for role in range(agent_count)]
 
@@ -125,7 +125,6 @@ class SimSpec:
 
         xml = template.render(var_dict)
         # Now do one more pretty printing
-
         xml = etree.tostring(
             etree.fromstring(xml.encode("utf-8")), pretty_print=True
         ).decode("utf-8")
