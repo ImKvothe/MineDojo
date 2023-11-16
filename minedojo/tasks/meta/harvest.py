@@ -195,6 +195,7 @@ class HarvestMeta(ExtraSpawnMetaTaskBase):
             simple_inventory_based_check(name=k, quantity=v)
             for k, v in target_quantities.items()
         ]
+        print(success_criteria)
         reward_fns = [
             simple_inventory_based_reward(name=k, weight=v)
             for k, v in reward_weights.items()

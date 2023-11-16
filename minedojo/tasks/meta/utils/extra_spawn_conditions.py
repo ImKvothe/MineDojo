@@ -31,7 +31,7 @@ def always_satisfy_condition(
     return True
 
 
-def _check_below_height_condition(
+def _check_below_height_condition(  #CHECK FOR MULTIAGENT
     height_threshold: Union[float, int],
     ini_info_dict: dict,
     pre_info_dict: dict,
@@ -42,7 +42,10 @@ def _check_below_height_condition(
     Note that in MC, y-axis is the vertical axis.
     This is useful for extra diamond ore spawn (below y = 14)
     """
-    return pre_info_dict["ypos"] <= height_threshold
+    rew1 = pre_info_dict[0]["ypos"] <= height_threshold
+    rew2 = pre_info_dict[1]["ypos"] <= height_threshold
+
+    return [rew1, rew2]
 
 
 def check_below_height_condition(
@@ -62,7 +65,12 @@ def _check_above_height_condition(
     Note that in MC, y-axis is the vertical axis.
     This is useful for extra plants spawn (above sea level y >= 62)
     """
-    return pre_info_dict["ypos"] >= height_threshold
+    rew1 = pre_info_dict[0]["ypos"] >= height_threshold
+    rew2 = pre_info_dict[1]["ypos"] >= height_threshold
+
+    return [rew1, rew2]
+
+
 
 
 def check_above_height_condition(
@@ -81,7 +89,10 @@ def _check_below_light_level_condition(
     Satisfy condition iff info["light_level"] <= light_level_threshold
     Userful for extra monsters spawn (only spawn in dark/night)
     """
-    return pre_info_dict["light_level"] <= light_level_threshold
+    rew1 = pre_info_dict[0]["light_level"] <= light_level_threshold
+    rew2 = pre_info_dict[1]["light_level"] <= light_level_threshold
+
+    return [rew1, rew2]
 
 
 def check_below_light_level_condition(light_level_threshold: Union[float, int]):
@@ -100,7 +111,11 @@ def _check_above_light_level_condition(
     Satisfy condition iff info["light_level"] >= light_level_threshold
     Userful for extra passive mobs spawn
     """
-    return pre_info_dict["light_level"] >= light_level_threshold
+    rew1 = pre_info_dict[0]["light_level"] >=  light_level_threshold
+    rew2 = pre_info_dict[1]["light_level"] >=  light_level_threshold
+
+    return [rew1, rew2]
+
 
 
 def check_above_light_level_condition(light_level_threshold: Union[float, int]):

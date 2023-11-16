@@ -16,8 +16,8 @@ __all__ = [
 # takes an initial info dict, a current info dict, and elapsed time-steps, return successful or not
 check_success_base = Callable[
     [
-        Arg(dict, "ini_info_dict"),
-        Arg(dict, "cur_info_dict"),
+        Arg(list, "ini_info_dict"),
+        Arg(list, "cur_info_dict"),
         Arg(int, "elapsed_timesteps"),
     ],
     bool,
@@ -34,10 +34,18 @@ def _simple_stat_kill_entity_based_check(
     """
     A simple success check based on `info["stat"]["kill_entity"][{name}]`.
     """
-    return (
-        cur_info_dict["stat"]["kill_entity"][name]
-        - ini_info_dict["stat"]["kill_entity"][name]
+
+    rew1 = (
+        cur_info_dict[0]["stat"]["kill_entity"][name]
+        - ini_info_dict[0]["stat"]["kill_entity"][name]
     ) >= quantity
+
+    rew2 = (
+        cur_info_dict[1]["stat"]["kill_entity"][name]
+        - ini_info_dict[1]["stat"]["kill_entity"][name]
+    ) >= quantity
+
+    return [rew1, rew2]
 
 
 def simple_stat_kill_entity_based_check(
@@ -49,29 +57,50 @@ def simple_stat_kill_entity_based_check(
 def _simple_inventory_based_check(
     name: str,
     quantity: int,
-    ini_info_dict: dict,
-    cur_info_dict: dict,
+    ini_info_dict,
+    cur_info_dict,
     elapsed_timesteps: int,
 ):
     """
     A simple success check based on `info["inventory"]`
     """
-    return (
+    rew1 = (
         sum(
             [
                 inv_item["quantity"]
-                for inv_item in cur_info_dict["inventory"]
+                for inv_item in cur_info_dict[0]["inventory"]
                 if inv_item["name"] == name
             ]
         )
         - sum(
             [
                 inv_item["quantity"]
-                for inv_item in ini_info_dict["inventory"]
+                for inv_item in ini_info_dict[0]["inventory"]
                 if inv_item["name"] == name
             ]
         )
     ) >= quantity
+
+    rew2 = (
+        sum(
+            [
+                inv_item["quantity"]
+                for inv_item in cur_info_dict[1]["inventory"]
+                if inv_item["name"] == name
+            ]
+        )
+        - sum(
+            [
+                inv_item["quantity"]
+                for inv_item in ini_info_dict[1]["inventory"]
+                if inv_item["name"] == name
+            ]
+        )
+    ) >= quantity
+    if rew1 == True or rew2 == True:
+        return True
+    else:
+        return False
 
 
 def simple_inventory_based_check(
@@ -86,7 +115,10 @@ def _time_since_death_check(
     """
     Success check based on info["time_since_death"]
     """
-    return cur_info_dict["stat"]["time_since_death"] >= threshold
+    rew1 = cur_info_dict[0]["stat"]["time_since_death"] >= threshold
+    rew2 = cur_info_dict[1]["stat"]["time_since_death"] >= threshold
+
+    return [rew1, rew2]
 
 
 def time_since_death_check(threshold, **kwargs) -> check_success_base:
@@ -103,16 +135,29 @@ def _use_any_item_check(
     success check based on increment in info["stat"]["use_item"]["minecraft"][item]
     satisfaction of any item will result in "True" -- the logic "any"
     """
-    return any(
+
+    rew1 = any(
         [
             (
-                cur_info_dict["stat"]["use_item"]["minecraft"][item]
-                - ini_info_dict["stat"]["use_item"]["minecraft"][item]
+                cur_info_dict[0]["stat"]["use_item"]["minecraft"][item]
+                - ini_info_dict[0]["stat"]["use_item"]["minecraft"][item]
             )
             >= target
             for item, target in targets.items()
         ]
     )
+
+    rew2 = any(
+        [
+            (
+                cur_info_dict[1]["stat"]["use_item"]["minecraft"][item]
+                - ini_info_dict[1]["stat"]["use_item"]["minecraft"][item]
+            )
+            >= target
+            for item, target in targets.items()
+        ]
+    )
+    return [rew1, rew2]
 
 
 def use_any_item_check(targets: Dict[str, int]) -> check_success_base:
@@ -129,16 +174,28 @@ def _use_all_item_check(
     success check based on increment in info["stat"]["use_item"]["minecraft"][item]
     satisfaction of all item will result in "True" -- the logic "all"
     """
-    return all(
+    rew1 = all(
         [
             (
-                cur_info_dict["stat"]["use_item"]["minecraft"][item]
-                - ini_info_dict["stat"]["use_item"]["minecraft"][item]
+                cur_info_dict[0]["stat"]["use_item"]["minecraft"][item]
+                - ini_info_dict[0]["stat"]["use_item"]["minecraft"][item]
             )
             >= target
             for item, target in targets.items()
         ]
     )
+
+    rew2 = all(
+        [
+            (
+                cur_info_dict[1]["stat"]["use_item"]["minecraft"][item]
+                - ini_info_dict[1]["stat"]["use_item"]["minecraft"][item]
+            )
+            >= target
+            for item, target in targets.items()
+        ]
+    )
+    return [rew1, rew2]
 
 
 def use_all_item_check(targets: Dict[str, int]) -> check_success_base:

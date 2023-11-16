@@ -76,8 +76,11 @@ class ARMasksWrapper(gym.ObservationWrapper):
         # get recipe matrix
         self._recipes = get_recipes_matrix()
 
-    def observation(self, observation: dict[str, Any]):
+    def observation(self, observation):
         # ------ craft smelt mask ------
+        print("entro al wrapper ar masks")
+        if (isinstance(observation, list)):
+            return self.observation_list(observation)
         inventory_vector = get_inventory_vector(observation["inventory"])
         craft_smelt_mask = ~np.any(
             (inventory_vector - self._recipes) < 0, axis=1
@@ -156,4 +159,89 @@ class ARMasksWrapper(gym.ObservationWrapper):
         # remove `full_stats`
         if "full_stats" in observation:
             del observation["full_stats"]
+        return observation
+
+
+    def observation_list(self, observation):
+        i = 0
+        while i < len(observation):
+            inventory_vector = get_inventory_vector(observation[i]["inventory"])
+            craft_smelt_mask = ~np.any(
+                (inventory_vector - self._recipes) < 0, axis=1
+            ).astype(
+                bool
+            )  # (N_all_craftable)
+            # meta mask using `nearby_table` and `nearby_furnace`
+            nearby_table, nearby_furnace = (
+                observation[i]["nearby_tools"]["table"],
+                observation[i]["nearby_tools"]["furnace"],
+            )
+            nearby_table = np.array(
+                [nearby_table] * len(MC.ALL_TABLE_CRAFT_ONLY_ITEMS_NN_ACTIONS), dtype=bool
+            )
+            nearby_furnace = np.array(
+                [nearby_furnace] * len(MC.ALL_SMELT_ITEMS_NN_ACTIONS), dtype=bool
+            )
+            table_craft_items_indices = slice(
+                len(MC.ALL_HAND_CRAFT_ITEMS_NN_ACTIONS),
+                len(MC.ALL_HAND_CRAFT_ITEMS_NN_ACTIONS)
+                + len(MC.ALL_TABLE_CRAFT_ONLY_ITEMS_NN_ACTIONS),
+            )
+            craft_smelt_mask[table_craft_items_indices] = np.logical_and(
+                nearby_table, craft_smelt_mask[table_craft_items_indices]
+            )
+            craft_smelt_mask[-len(MC.ALL_SMELT_ITEMS_NN_ACTIONS) :] = np.logical_and(
+                nearby_furnace, craft_smelt_mask[-len(MC.ALL_SMELT_ITEMS_NN_ACTIONS) :]
+            )
+            # ------ determine destroy mask ------
+            # destroy mask is simply if slots are occupied
+            destroy_mask = (observation[i]["inventory"]["name"] != "air").astype(bool)
+            # ------ determine place mask ------
+            # True if that slot is occupied by placeable items
+            place_mask = np.logical_and(
+                (observation[i]["inventory"]["name"] != "air").astype(bool),
+                np.isin(
+                    observation[i]["inventory"]["name"], np.array(MC.PLACEABLE_ITEM_NAMES)
+                ),
+            )
+            # ------ determine equip mask
+            # True if that slot is occupied
+            # special treat for main-hand slot
+            equip_mask = (observation[i]["inventory"]["name"] != "air").astype(bool)
+            equip_mask[0] = (
+                equip_mask[0]
+                and observation[i]["inventory"]["name"][0] in MC.NON_MAINHAND_ITEM_NAMES
+            )
+
+            # ------ determine action category mask ------
+            a_cat_mask = np.empty(shape=(self._n_fn_actions,), dtype=bool)
+            # no_op, use, and attack are always valid
+            a_cat_mask[self._a_cat_always_true_indices] = True
+            # validity of drop is dependent on if anything held in the main-hand
+            a_cat_mask[self._a_cats.index("drop")] = (
+                False if observation[i]["inventory"]["name"][0] == "air" else True
+            )
+            # validity of craft equals to any(craft_smelt_mask) and the inventory is not full
+            a_cat_mask[self._a_cats.index("craft")] = np.any(
+                craft_smelt_mask
+            ) and not np.all((observation[i]["inventory"]["name"] != "air").astype(bool))
+            # validity of equip simply equals to any(equip_mask)
+            a_cat_mask[self._a_cats.index("equip")] = np.any(equip_mask)
+            # validity of place simply equals to any(place_mask)
+            a_cat_mask[self._a_cats.index("place")] = np.any(place_mask)
+            # validity of destroy simple equals to any(destroy_mask)
+            a_cat_mask[self._a_cats.index("destroy")] = np.any(destroy_mask)
+
+            observation[i]["masks"] = {
+                "action_type": a_cat_mask,
+                "action_arg": self._a_arg_mask,
+                "equip": equip_mask,
+                "place": place_mask,
+                "destroy": destroy_mask,
+                "craft_smelt": craft_smelt_mask,
+            }
+            # remove `full_stats`
+            if "full_stats" in observation[i]:
+                del observation[i]["full_stats"]
+            i = i + 1
         return observation

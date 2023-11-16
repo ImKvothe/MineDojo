@@ -49,6 +49,7 @@ class BridgeEnv:
         agent_count: int = 2,
         is_fault_tolerant: bool = True,
         seed: Optional[int] = None,
+        
     ):
         assert agent_count == 2, "TODO"
         self._agent_count = agent_count
@@ -57,7 +58,7 @@ class BridgeEnv:
         self._is_fault_tolerant = is_fault_tolerant
         self._already_closed = False
         self._terminated = False
-
+        
         self._seed_instance_manager()
 
     @property
@@ -128,7 +129,7 @@ class BridgeEnv:
             action_xmls: A list of prepared action XMLs.
         """
         print("entro al step de bridge env")
-        print(action_xmls[0])
+        #print(action_xmls[0])
 
         assert len(action_xmls) == len(
             self._instances

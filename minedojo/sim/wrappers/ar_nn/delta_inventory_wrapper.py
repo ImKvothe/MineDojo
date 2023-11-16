@@ -83,19 +83,35 @@ class DeltaInventoryWrapper(gym.Wrapper):
 
     def reset(self, **kwargs):
         observation = self.env.reset(**kwargs)
-        self._prev_inventory = deepcopy(observation["inventory"])
-        self._prev_mask = deepcopy(observation["masks"]["craft_smelt"])
+        prev_inventory1 = deepcopy(observation[0]["inventory"])
+        prev_inventory2 = deepcopy(observation[1]["inventory"])
+        self._prev_inventory = [prev_inventory1, prev_inventory2]
+        prev_mask1 = deepcopy(observation[0]["masks"]["craft_smelt"])
+        prev_mask2 = deepcopy(observation[1]["masks"]["craft_smelt"])
+        self._prev_mask = [prev_mask1, prev_mask2]
         self._prev_craft_actions = deque(maxlen=1)
-        return self.observation(observation, None)
+        obs_ini1 = self.observation(observation, None, 0)
+        obs_ini12 = self.observation(observation, None, 1)
+        return [obs_ini1, obs_ini12]
 
-    def step(self, action):
-        observation, reward, done, info = self.env.step(action)
-        new_obs = self.observation(observation, action)
-        self._prev_inventory = deepcopy(observation["inventory"])
-        self._prev_mask = deepcopy(observation["masks"]["craft_smelt"])
-        return new_obs, reward, done, info
+    def step(self, actions):
+        print("entro al wrapper delta")
+        observation, reward, done, info = self.env.step(actions) 
+        print("vuelvo al wrapper delta")
+        new_obs0 = self.observation(observation, actions[0], 0)
+        new_obs1 = self.observation(observation, actions[1], 1)
 
-    def observation(self, observation, action):
+        prev_inventory1 = deepcopy(new_obs0["inventory"])
+        prev_inventory2 = deepcopy(new_obs1["inventory"])
+        self._prev_inventory = [prev_inventory1, prev_inventory2]
+        prev_mask1 = deepcopy(new_obs0["masks"]["craft_smelt"])
+        prev_mask2 = deepcopy(new_obs1["masks"]["craft_smelt"])
+        self._prev_mask = [prev_mask1, prev_mask2]
+
+        new_obslist = [new_obs0, new_obs1]
+        return new_obslist, reward, done, info
+
+    def observation(self, observation, action, i):
         if action is None:
             # first step
             delta_obs = {
@@ -132,8 +148,8 @@ class DeltaInventoryWrapper(gym.Wrapper):
             )
             self._prev_craft_actions.append(new_craft_idx)
             craft_idx = self._prev_craft_actions[0]
-            cur_inv_vector = get_inventory_vector(observation["inventory"])[0]
-            pre_inv_vector = get_inventory_vector(self._prev_inventory)[0]
+            cur_inv_vector = get_inventory_vector(observation[i]["inventory"])[0]
+            pre_inv_vector = get_inventory_vector(self._prev_inventory[i])[0]
             delta_inv_vector = cur_inv_vector - pre_inv_vector
             increment_indices = np.flatnonzero(delta_inv_vector > 0)[
                 : self._n_increased
@@ -197,7 +213,7 @@ class DeltaInventoryWrapper(gym.Wrapper):
                     item_name_to_craft = MC.ALL_CRAFT_SMELT_ITEMS[craft_idx]
                     item_idx_to_craft = MC.ALL_ITEMS.index(item_name_to_craft)
                     if (
-                        bool(self._prev_mask[craft_idx]) is True
+                        bool(self._prev_mask[i][craft_idx]) is True
                         and item_idx_to_craft in increment_indices
                     ):
                         delta_obs.update(
@@ -322,7 +338,7 @@ class DeltaInventoryWrapper(gym.Wrapper):
                     )
                 else:
                     ingredients_indices = np.flatnonzero(self._recipes[craft_idx] > 0)
-                    if bool(self._prev_mask[craft_idx]) is True and set(
+                    if bool(self._prev_mask[i][craft_idx]) is True and set(
                         ingredients_indices
                     ).issubset(set(decrement_indices)):
                         delta_obs.update(
@@ -396,5 +412,5 @@ class DeltaInventoryWrapper(gym.Wrapper):
                                 ),
                             }
                         )
-        observation["delta_inv"] = delta_obs
-        return observation
+        observation[i]["delta_inv"] = delta_obs
+        return observation[i]

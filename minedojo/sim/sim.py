@@ -445,10 +445,13 @@ class MineDojoSim(gym.Env):
             agent_xml_etree.insert(0, agent_xml)    
             agent_xmls.append(agent_xml_etree)
 
-        raw_obs = self._bridge_env.reset(episode_id, agent_xmls)[0]
-        obs, info = self._process_raw_obs(raw_obs)
-        self._prev_obs, self._prev_info = deepcopy(obs), deepcopy(info)
-        return obs
+        raw_obs = self._bridge_env.reset(episode_id, agent_xmls)
+        obs, info = self._process_raw_obs(raw_obs[0])
+        obs2, info2 = self._process_raw_obs(raw_obs[1])
+        full_info = [info, info2]
+        obs_list = [obs, obs2]
+        self._prev_obs, self._prev_info = deepcopy(obs_list), deepcopy(full_info)
+        return obs_list
 
     def step(self, action: dict):
         """Run one timestep of the environment’s dynamics. Accepts an action and returns next_obs, reward, done, info.
@@ -464,27 +467,35 @@ class MineDojoSim(gym.Env):
             - ``dict`` - Contains auxiliary diagnostic information (helpful for debugging, and sometimes learning).
         """
         print("entrando a step")
-        #print(action)
         i = 0
         actions = list(action.items())
+        #print(actions)
         actions_xml = []
+        self._prev_action = []
         while i < len(actions):
-            action0 = list(action.items())[0][1]
-            self._prev_action = deepcopy(action0)
-            action_xml = self._action_obj_to_xml(action0)
+            action_i = list(action.items())[i][1]
+            prev_action = deepcopy(action_i)
+            self._prev_action.append(prev_action)
+            action_xml = self._action_obj_to_xml(action_i)
             #print(action_xml)
             actions_xml.append(action_xml)
             i = i + 1 
         #print(actions_xml)
         step_tuple = self._bridge_env.step(actions_xml)
+        print("vuelta a sim")
         step_success, raw_obs = step_tuple.step_success, step_tuple.raw_obs
+        #print(raw_obs)
         if not step_success:
             # when step failed, return prev obs
             return self._prev_obs, 0, True, self._prev_info
         else:
             obs, info = self._process_raw_obs(raw_obs[0])
-            self._prev_obs, self._prev_info = deepcopy(obs), deepcopy(info)
-            return obs, 0, self.is_terminated, info
+            obs2, info2 = self._process_raw_obs(raw_obs[1])
+            full_info = [info, info2]
+            full_obs = [obs, obs2]
+            #print(full_obs)
+            self._prev_obs, self._prev_info = deepcopy(full_obs), deepcopy(full_info)
+            return full_obs, 0, self.is_terminated, full_info
 
     def execute_cmd(self, cmd: str, action: Optional[dict] = None):
         """Execute a given string command.

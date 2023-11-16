@@ -18,9 +18,9 @@ __all__ = [
 # return a scalar reward value
 reward_fn_base = Callable[
     [
-        Arg(dict, "ini_info_dict"),
-        Arg(dict, "pre_info_dict"),
-        Arg(dict, "cur_info_dict"),
+        Arg(list, "ini_info_dict"),
+        Arg(list, "pre_info_dict"),
+        Arg(list, "cur_info_dict"),
         Arg(int, "elapsed_timesteps"),
     ],
     float,
@@ -38,10 +38,15 @@ def _simple_stat_kill_entity_based_reward(
     """
     A simple reward based on increment in `info["stat"]["kill_entity"][{name}]`.
     """
-    return weight * (
-        cur_info_dict["stat"]["kill_entity"][name]
-        - pre_info_dict["stat"]["kill_entity"][name]
+    rew1 = weight * (
+        cur_info_dict[0]["stat"]["kill_entity"][name]
+        - pre_info_dict[0]["stat"]["kill_entity"][name]
     )
+    rew2 = weight * (
+        cur_info_dict[1]["stat"]["kill_entity"][name]
+        - pre_info_dict[1]["stat"]["kill_entity"][name]
+    )
+    return [rew1, rew2]
 
 
 def simple_stat_kill_entity_based_reward(
@@ -53,30 +58,49 @@ def simple_stat_kill_entity_based_reward(
 def _simple_inventory_based_reward(
     name: str,
     weight: Union[int, float],
-    ini_info_dict: dict,
-    pre_info_dict: dict,
-    cur_info_dict: dict,
+    ini_info_dict,
+    pre_info_dict,
+    cur_info_dict,
     elapsed_timesteps: int,
 ):
     """
     A simple reward based on increment in `info["inventory"]`
     """
-    return (
+    print(type(cur_info_dict))
+    rew1 = (
         sum(
             [
                 inv_item["quantity"]
-                for inv_item in cur_info_dict["inventory"]
+                for inv_item in cur_info_dict[0]["inventory"]
                 if inv_item["name"] == name
             ]
         )
         - sum(
             [
                 inv_item["quantity"]
-                for inv_item in pre_info_dict["inventory"]
+                for inv_item in pre_info_dict[0]["inventory"]
                 if inv_item["name"] == name
             ]
         )
     ) * weight
+    
+    rew2 = (
+        sum(
+            [
+                inv_item["quantity"]
+                for inv_item in cur_info_dict[1]["inventory"]
+                if inv_item["name"] == name
+            ]
+        )
+        - sum(
+            [
+                inv_item["quantity"]
+                for inv_item in pre_info_dict[1]["inventory"]
+                if inv_item["name"] == name
+            ]
+        )
+    ) * weight
+    return [rew1, rew2]
 
 
 def simple_inventory_based_reward(
@@ -94,20 +118,20 @@ def _possess_item_reward(
     cur_info_dict: dict,
     elapsed_timesteps: int,
 ):
-    return (
+    rew1 = (
         float(
             (
                 sum(
                     [
                         inv_item["quantity"]
-                        for inv_item in cur_info_dict["inventory"]
+                        for inv_item in cur_info_dict[0]["inventory"]
                         if inv_item["name"] == name
                     ]
                 )
                 - sum(
                     [
                         inv_item["quantity"]
-                        for inv_item in ini_info_dict["inventory"]
+                        for inv_item in ini_info_dict[0]["inventory"]
                         if inv_item["name"] == name
                     ]
                 )
@@ -116,6 +140,30 @@ def _possess_item_reward(
         )
         * weight
     )
+
+    rew2 = (
+        float(
+            (
+                sum(
+                    [
+                        inv_item["quantity"]
+                        for inv_item in cur_info_dict[1]["inventory"]
+                        if inv_item["name"] == name
+                    ]
+                )
+                - sum(
+                    [
+                        inv_item["quantity"]
+                        for inv_item in ini_info_dict[1]["inventory"]
+                        if inv_item["name"] == name
+                    ]
+                )
+            )
+            >= quantity
+        )
+        * weight
+    )
+    return [rew1, rew2]
 
 
 def possess_item_reward(
@@ -132,11 +180,17 @@ def _survive_per_day_reward(
     cur_info_dict: dict,
     elapsed_timesteps: int,
 ):
-    time_since_death_pre = pre_info_dict["stat"]["time_since_death"]
-    time_since_death_cur = cur_info_dict["stat"]["time_since_death"]
-    survived_days_pre = time_since_death_pre // mc_ticks_per_day
-    survived_days_cur = time_since_death_cur // mc_ticks_per_day
-    return (survived_days_cur - survived_days_pre) * weight
+    time_since_death_pre1 = pre_info_dict[0]["stat"]["time_since_death"]
+    time_since_death_pre2 = pre_info_dict[1]["stat"]["time_since_death"]
+    time_since_death_cur1 = cur_info_dict[1]["stat"]["time_since_death"]
+    time_since_death_cur2 = cur_info_dict[1]["stat"]["time_since_death"]
+    survived_days_pre1 = time_since_death_pre1 // mc_ticks_per_day
+    survived_days_pre2 = time_since_death_pre2 // mc_ticks_per_day
+    survived_days_cur1 = time_since_death_cur1 // mc_ticks_per_day
+    survived_days_cur2 = time_since_death_cur2 // mc_ticks_per_day
+    rew1 = (survived_days_cur1 - survived_days_pre1) * weight
+    rew2 = (survived_days_cur2 - survived_days_pre2) * weight 
+    return [rew1, rew2]
 
 
 def survive_per_day_reward(
@@ -156,9 +210,16 @@ def _survive_n_days_reward(
     cur_info_dict: dict,
     elapsed_timesteps: int,
 ):
-    return weight * float(
-        cur_info_dict["stat"]["time_since_death"] >= mc_ticks_per_day * target_days
+    rew1 = weight * float(
+        cur_info_dict[0]["stat"]["time_since_death"] >= mc_ticks_per_day * target_days
     )
+
+    rew2 = weight * float(
+        cur_info_dict[1]["stat"]["time_since_death"] >= mc_ticks_per_day * target_days
+    )
+
+      
+    return [rew1, rew2]
 
 
 def survive_n_days_reward(
@@ -182,16 +243,30 @@ def _use_any_item_reward(
     """
     reward any usage of item in items_and_weights.keys()
     """
-    return sum(
+    rew1 = sum(
         [
             (
-                cur_info_dict["stat"]["use_item"]["minecraft"][item]
-                - pre_info_dict["stat"]["use_item"]["minecraft"][item]
+                cur_info_dict[0]["stat"]["use_item"]["minecraft"][item]
+                - pre_info_dict[0]["stat"]["use_item"]["minecraft"][item]
             )
             * weight
             for item, weight in items_and_weights.items()
         ]
     )
+
+    rew2 = sum(
+        [
+            (
+                cur_info_dict[1]["stat"]["use_item"]["minecraft"][item]
+                - pre_info_dict[1]["stat"]["use_item"]["minecraft"][item]
+            )
+            * weight
+            for item, weight in items_and_weights.items()
+        ]
+    )
+
+
+    return [rew1, rew2]
 
 
 def use_any_item_reward(

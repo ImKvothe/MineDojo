@@ -108,6 +108,7 @@ class MetaTaskBase(gym.Wrapper):
             - ``bool`` - Whether the episode has ended.
             - ``dict`` - Contains auxiliary diagnostic information (helpful for debugging, and sometimes learning).
         """
+        #print(action)
         obs, _, _, info = self.env.step(action)
         self._elapsed_timesteps += 1
         reward = self._compute_reward_hook(
@@ -116,6 +117,7 @@ class MetaTaskBase(gym.Wrapper):
             cur_info=info,
             elapsed_timesteps=self._elapsed_timesteps,
         )
+        print(reward)
         self._is_successful = self._determine_success_hook(
             ini_info=self._ini_info_dict,
             cur_info=info,
@@ -159,13 +161,12 @@ class MetaTaskBase(gym.Wrapper):
 
     def _compute_reward_hook(
         self,
-        ini_info: Dict[str, Any],
-        pre_info: Dict[str, Any],
-        cur_info: Dict[str, Any],
+        ini_info,
+        pre_info,
+        cur_info,
         elapsed_timesteps: int,
     ) -> Union[int, float]:
-        return sum(
-            [
+        rew =[
                 reward_fn(
                     ini_info_dict=ini_info,
                     pre_info_dict=pre_info,
@@ -174,10 +175,14 @@ class MetaTaskBase(gym.Wrapper):
                 )
                 for reward_fn in self._reward_fns
             ]
-        )
+        rew1 = sum(n for n, _ in rew)
+        rew2 = sum(n for _, n in rew)
+        return [rew1, rew2]
+
+
 
     def _determine_success_hook(
-        self, ini_info: Dict[str, Any], cur_info: Dict[str, Any], elapsed_timesteps: int
+        self, ini_info, cur_info, elapsed_timesteps: int
     ) -> bool:
         return any(
             [
@@ -189,7 +194,6 @@ class MetaTaskBase(gym.Wrapper):
                 for check_success in self._success_criteria
             ]
         )
-
 
 class ExtraSpawnMetaTaskBase(MetaTaskBase):
     """
@@ -355,4 +359,9 @@ class ExtraSpawnMetaTaskBase(MetaTaskBase):
             obs, _, _, info = self.env.spawn_mobs(
                 self._initial_mobs, mobs_rel_positions
             )
+        if not isinstance(obs, list):
+            obs = [obs, obs]
+        if not isinstance(info, list):
+            info = [info, info]
+        print("hookreset")
         return obs, info
