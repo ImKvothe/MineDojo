@@ -1,7 +1,9 @@
 import minedojo
+from minedojo.sim import InventoryItem
 
 if __name__ == "__main__":
-    env = minedojo.make(task_id="harvest_milk", image_size=(288,512))
+    initial_inventory = [InventoryItem(slot=1, name="milk_bucket", variant=None, quantity=1)]
+    env = minedojo.make(task_id="harvest_milk", image_size=(288,512), initial_inventory = initial_inventory)
     print(env.task_prompt)
     print(env.task_guidance)
 

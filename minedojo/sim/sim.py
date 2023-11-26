@@ -127,6 +127,10 @@ class MineDojoSim(gym.Env):
         start_position: Optional[Dict[str, Union[float, int]]] = None,
         start_health: Optional[float] = None,
         start_food: Optional[int] = None,
+        initial_inventory2: Optional[List[InventoryItem]] = None,
+        start_position2: Optional[Dict[str, Union[float, int]]] = None,
+        start_health2: Optional[float] = None,
+        start_food2: Optional[int] = None,
         start_time: Optional[int] = None,
         initial_weather: Optional[Literal["normal", "clear", "rain", "thunder"]] = None,
         spawn_in_village: bool = False,
@@ -171,7 +175,9 @@ class MineDojoSim(gym.Env):
             lidar_rays = lidar_rays or [(0.0, 0.0, 10.0)]
         assert not use_depth, "TODO: fix depth obs bug"
         start_health = start_health or 20.0
+        start_health2 = start_health2 or 20.0
         start_food = start_food or 20
+        start_food2 = start_food2 or 20
         assert generate_world_type in {
             "default",
             "from_file",
@@ -289,12 +295,20 @@ class MineDojoSim(gym.Env):
         agent_handlers = []
         # configure agent start handlers, e.g., initial inventory
         self.start_health, self.start_food = start_health, start_food
+        self.start_health2, self.start_food2 = start_health2, start_food2
         agent_start_handlers = [
             handlers.LowLevelInputsAgentStart(),
             handlers.AgentStartBreakSpeedMultiplier(break_speed_multiplier),
             handlers.StartingHealthAgentStart(health=start_health),
             handlers.StartingFoodAgentStart(food=start_food),
         ]
+        agent_start_handlers2 = [
+            handlers.LowLevelInputsAgentStart(),
+            handlers.AgentStartBreakSpeedMultiplier(break_speed_multiplier),
+            handlers.StartingHealthAgentStart(health=start_health2),
+            handlers.StartingFoodAgentStart(food=start_food2),
+        ]
+        print("llega")
         self.initial_inventory = initial_inventory
         if initial_inventory is not None:
             initial_inventory = [
@@ -317,6 +331,30 @@ class MineDojoSim(gym.Env):
                     z=start_position["z"],
                     yaw=start_position["yaw"],
                     pitch=start_position["pitch"],
+                )
+            )
+        self.initial_inventory2 = initial_inventory2
+        if initial_inventory2 is not None:
+            initial_inventory2 = [
+                parse_inventory_item(item) for item in initial_inventory2
+            ]
+            agent_start_handlers2.append(
+                handlers.InventoryAgentStart(
+                    {
+                        inventory_item[0]: inventory_item[1]
+                        for inventory_item in initial_inventory2
+                    }
+                )
+            )
+        self.start_position2 = start_position2
+        if start_position2 is not None:
+            agent_start_handlers2.append(
+                handlers.AgentStartPlacement(
+                    x=start_position2["x"],
+                    y=start_position2["y"],
+                    z=start_position2["z"],
+                    yaw=start_position2["yaw"],
+                    pitch=start_position2["pitch"],
                 )
             )
         # configure server initial conditions handlers
@@ -374,6 +412,7 @@ class MineDojoSim(gym.Env):
             action_handlers=action_handlers,
             agent_handlers=agent_handlers,
             agent_start_handlers=agent_start_handlers,
+            agent_start_handlers2=agent_start_handlers2,
             server_initial_conditions_handlers=server_initial_conditions_handlers,
             world_generator_handlers=world_generator_handlers,
             server_decorator_handlers=server_decorator_handlers,

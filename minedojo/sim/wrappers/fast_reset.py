@@ -29,8 +29,16 @@ class FastResetWrapper(gym.Wrapper):
         super().__init__(env=env)
         start_time, start_weather = env.start_time, env.initial_weather
         initial_inventory, start_position = env.initial_inventory, env.start_position
+        initial_inventory2, start_position2 = env.initial_inventory2, env.start_position2
         start_health, start_food = env.start_health, env.start_food
+        start_health2, start_food2 = env.start_health2, env.start_food2
         if start_health != MAX_LIFE or start_food != MAX_FOOD:
+            print(
+                "Warning! You use non-default values for `start_health` and `start_food`. "
+                "However, they will not take effects because `fast_reset = True`. "
+                "Consider using `fast_reset = False` instead."
+            )
+        if start_health2 != MAX_LIFE or start_food2 != MAX_FOOD:
             print(
                 "Warning! You use non-default values for `start_health` and `start_food`. "
                 "However, they will not take effects because `fast_reset = True`. "
@@ -58,6 +66,16 @@ class FastResetWrapper(gym.Wrapper):
         if start_position is not None:
             self._reset_cmds.append(
                 f'/tp {start_position["x"]} {start_position["y"]} {start_position["z"]} {start_position["yaw"]} {start_position["pitch"]}'
+            )
+        if initial_inventory2 is not None:
+            for inventory_item in initial_inventory2:
+                slot, item_dict = parse_inventory_item(inventory_item)
+                self._reset_cmds.append(
+                    f'/replaceitem entity @p {map_slot_number_to_cmd_slot(slot)} minecraft:{item_dict["type"]} {item_dict["quantity"]} {item_dict["metadata"]}'
+                )
+        if start_position2 is not None:
+            self._reset_cmds.append(
+                f'/tp {start_position2["x"]} {start_position2["y"]} {start_position2["z"]} {start_position2["yaw"]} {start_position2["pitch"]}'
             )
         if clear_ground:
             self._reset_cmds.append("/kill @e[type=item]")

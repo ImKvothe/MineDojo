@@ -27,6 +27,7 @@ class SimSpec:
         action_handlers: List[TranslationHandler],
         agent_handlers: List[Handler],
         agent_start_handlers: List[Handler],
+        agent_start_handlers2: List[Handler],
         server_initial_conditions_handlers: List[Handler],
         world_generator_handlers: List[Handler],
         server_decorator_handlers: List[Handler],
@@ -45,9 +46,7 @@ class SimSpec:
         self._world_generator_handlers = world_generator_handlers
         self._server_decorator_handlers = server_decorator_handlers
         self._server_quit_handlers = server_quit_handlers
-        self._agent_start_handlers_list = [
-            agent_start_handlers for _ in range(agent_count)
-        ]
+        self._agent_start_handlers_list = [agent_start_handlers, agent_start_handlers2]
 
         # check that the obs/action have no duplicate to_strings
         assert len([o.to_string() for o in self._obs_handlers]) == len(

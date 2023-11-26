@@ -178,6 +178,10 @@ class TechTreeMeta(ExtraSpawnMetaTaskBase):
         start_position: Optional[Dict[str, Union[float, int]]] = None,
         start_health: Optional[float] = None,
         start_food: Optional[int] = None,
+        initial_inventory2: Optional[List[InventoryItem]] = None,
+        start_position2: Optional[Dict[str, Union[float, int]]] = None,
+        start_health2: Optional[float] = None,
+        start_food2: Optional[int] = None,
         initial_weather: Optional[str] = None,
         # ------ global conditions ------
         break_speed_multiplier: float = 1.0,
@@ -275,12 +279,16 @@ class TechTreeMeta(ExtraSpawnMetaTaskBase):
             lidar_rays=lidar_rays,
             event_level_control=event_level_control,
             initial_inventory=initial_inventory,
+            initial_inventory2=initial_inventory2,
             break_speed_multiplier=break_speed_multiplier,
             world_seed=world_seed,
             start_position=start_position,
+            start_position2=start_position2,
             initial_weather=initial_weather,
             start_health=start_health,
             start_food=start_food,
+            start_health2=start_health2,
+            start_food2=start_food2,
         )
 
     @property

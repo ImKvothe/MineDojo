@@ -66,7 +66,7 @@ def _simple_inventory_based_reward(
     """
     A simple reward based on increment in `info["inventory"]`
     """
-    print(type(cur_info_dict))
+    #print(type(cur_info_dict))
     rew1 = (
         sum(
             [

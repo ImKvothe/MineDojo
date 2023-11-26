@@ -486,6 +486,13 @@ def _specific_task_make(task_id: str, *args, **kwargs):
             task_specs["initial_inventory"]
         )
         task_specs.pop("initial_inventory")
+    if "initial_inventory2" in task_specs:
+        kwargs["initial_inventory2"] = _parse_inventory_dict(
+            task_specs["initial_inventory2"]
+        )
+        task_specs.pop("initial_inventory2")
+
+    
 
     # pop prompt from task specs because it is set from programmatic yaml
     task_specs.pop("prompt")
