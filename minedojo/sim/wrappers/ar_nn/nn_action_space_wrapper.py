@@ -272,7 +272,7 @@ class NNActionSpaceWrapper(gym.Wrapper):
         return obs
 
     def step(self, actions):
-        print("entro al wrapper nnaction")
+        #print("entro al wrapper nnaction")
         #print(actions)
         malmo_action, destroy_item = self.action(actions)
         destroy_item, destroy_slot = destroy_item
@@ -285,7 +285,7 @@ class NNActionSpaceWrapper(gym.Wrapper):
             )
         else:
             obs, reward, done, info = self.env.step(malmo_action)
-        print("vuelvo al wrapper nnaction")
+        #print("vuelvo al wrapper nnaction")
 
         # handle malmo's lags for 2 agents
         if actions[0][5] in {2, 4, 5, 6, 7} or actions[1][5] in {2, 4, 5, 6, 7}:

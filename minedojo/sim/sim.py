@@ -211,7 +211,7 @@ class MineDojoSim(gym.Env):
                 ), f"Invalid biome id {specified_biome}"
             else:
                 raise ValueError(f"invalid biome type {specified_biome}")
-        print("entering MineDojoSim")
+        #print("entering MineDojoSim")
         # configure obs handlers
         obs_handlers = [
             handlers.POVObservation(image_size, False),
@@ -308,7 +308,6 @@ class MineDojoSim(gym.Env):
             handlers.StartingHealthAgentStart(health=start_health2),
             handlers.StartingFoodAgentStart(food=start_food2),
         ]
-        print("llega")
         self.initial_inventory = initial_inventory
         if initial_inventory is not None:
             initial_inventory = [
@@ -505,7 +504,7 @@ class MineDojoSim(gym.Env):
             - ``bool`` - Whether the episode has ended.
             - ``dict`` - Contains auxiliary diagnostic information (helpful for debugging, and sometimes learning).
         """
-        print("entrando a step")
+        #print("entrando a step")
         i = 0
         actions = list(action.items())
         #print(actions)
@@ -521,7 +520,7 @@ class MineDojoSim(gym.Env):
             i = i + 1 
         #print(actions_xml)
         step_tuple = self._bridge_env.step(actions_xml)
-        print("vuelta a sim")
+        #print("vuelta a sim")
         step_success, raw_obs = step_tuple.step_success, step_tuple.raw_obs
         #print(raw_obs)
         if not step_success:

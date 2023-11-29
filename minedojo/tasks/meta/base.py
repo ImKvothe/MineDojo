@@ -108,7 +108,6 @@ class MetaTaskBase(gym.Wrapper):
             - ``bool`` - Whether the episode has ended.
             - ``dict`` - Contains auxiliary diagnostic information (helpful for debugging, and sometimes learning).
         """
-        #print(action)
         obs, _, _, info = self.env.step(action)
         self._elapsed_timesteps += 1
         reward = self._compute_reward_hook(
@@ -117,7 +116,6 @@ class MetaTaskBase(gym.Wrapper):
             cur_info=info,
             elapsed_timesteps=self._elapsed_timesteps,
         )
-        print(reward)
         self._is_successful = self._determine_success_hook(
             ini_info=self._ini_info_dict,
             cur_info=info,

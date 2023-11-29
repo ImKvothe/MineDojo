@@ -95,9 +95,9 @@ class DeltaInventoryWrapper(gym.Wrapper):
         return [obs_ini1, obs_ini12]
 
     def step(self, actions):
-        print("entro al wrapper delta")
+        #print("entro al wrapper delta")
         observation, reward, done, info = self.env.step(actions) 
-        print("vuelvo al wrapper delta")
+        #print("vuelvo al wrapper delta")
         new_obs0 = self.observation(observation, actions[0], 0)
         new_obs1 = self.observation(observation, actions[1], 1)
 

@@ -109,8 +109,8 @@ class BridgeEnv:
         self.integratedServerPort = port  # should/can this even be cached?
         
         # go ahead and set port for all non-controller clients
-        print("new port: " + str(port))
-        print("old port: " + str(instance.port))
+        #print("new port: " + str(port))
+        #print("old port: " + str(instance.port))
         return master_host, str(port)
     
     def _setup_master_slave_connection(self, slave_xml: etree.Element,
@@ -128,7 +128,7 @@ class BridgeEnv:
         Args:
             action_xmls: A list of prepared action XMLs.
         """
-        print("entro al step de bridge env")
+        #print("entro al step de bridge env")
         #print(action_xmls[0])
 
         assert len(action_xmls) == len(
