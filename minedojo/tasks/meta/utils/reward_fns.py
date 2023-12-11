@@ -182,7 +182,7 @@ def _survive_per_day_reward(
 ):
     time_since_death_pre1 = pre_info_dict[0]["stat"]["time_since_death"]
     time_since_death_pre2 = pre_info_dict[1]["stat"]["time_since_death"]
-    time_since_death_cur1 = cur_info_dict[1]["stat"]["time_since_death"]
+    time_since_death_cur1 = cur_info_dict[0]["stat"]["time_since_death"]
     time_since_death_cur2 = cur_info_dict[1]["stat"]["time_since_death"]
     survived_days_pre1 = time_since_death_pre1 // mc_ticks_per_day
     survived_days_pre2 = time_since_death_pre2 // mc_ticks_per_day
