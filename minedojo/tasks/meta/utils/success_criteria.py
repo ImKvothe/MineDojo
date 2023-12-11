@@ -44,10 +44,8 @@ def _simple_stat_kill_entity_based_check(
         cur_info_dict[1]["stat"]["kill_entity"][name]
         - ini_info_dict[1]["stat"]["kill_entity"][name]
     ) >= quantity
-    if rew1 == True or rew2 == True:
-        return True
-    else:
-        return False
+
+    return rew1 or rew2
 
 
 def simple_stat_kill_entity_based_check(
@@ -100,10 +98,7 @@ def _simple_inventory_based_check(
         )
     ) >= quantity
 
-    if rew1 == True or rew2 == True:
-        return True
-    else:
-        return False
+    return rew1 or rew2
 
 
 def simple_inventory_based_check(
@@ -121,10 +116,7 @@ def _time_since_death_check(
     rew1 = cur_info_dict[0]["stat"]["time_since_death"] >= threshold
     rew2 = cur_info_dict[1]["stat"]["time_since_death"] >= threshold
 
-    if rew1 == True or rew2 == True:
-        return True
-    else:
-        return False
+    return rew1 or rew2
 
 
 def time_since_death_check(threshold, **kwargs) -> check_success_base:
@@ -163,10 +155,7 @@ def _use_any_item_check(
             for item, target in targets.items()
         ]
     )
-    if rew1 == True or rew2 == True:
-        return True
-    else:
-        return False
+    return rew1 or rew2
 
 
 def use_any_item_check(targets: Dict[str, int]) -> check_success_base:
@@ -204,10 +193,7 @@ def _use_all_item_check(
             for item, target in targets.items()
         ]
     )
-    if rew1 == True or rew2 == True:
-        return True
-    else:
-        return False
+    return rew1 or rew2
 
 
 def use_all_item_check(targets: Dict[str, int]) -> check_success_base:
