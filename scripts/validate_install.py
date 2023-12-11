@@ -13,7 +13,10 @@ if __name__ == "__main__":
 
     env.reset()
     for _ in range(20):
-        obs, reward, done, info = env.step(env.action_space.no_op())
+        action0 = env.action_space.no_op()
+        action1 = env.action_space.no_op()
+        actions = [action0, action1]
+        obs, reward, done, info = env.step(actions)
     env.close()
 
     print("[INFO] Installation Success")

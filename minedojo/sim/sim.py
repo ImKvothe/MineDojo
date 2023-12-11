@@ -506,12 +506,13 @@ class MineDojoSim(gym.Env):
         """
         #print("entrando a step")
         i = 0
-        actions = list(action.items())
-        #print(actions)
         actions_xml = []
         self._prev_action = []
-        while i < len(actions):
-            action_i = list(action.items())[i][1]
+        items = list(action.items())
+        if len(items) > 2 and (items[2][0]) == "chat":  ## IF ACTION IS A CHAT ACTION ADD TO FIRST AGENT ACTIONS
+            items[0][1]['chat'] = items[2][1]
+        while i < 2:
+            action_i = items[i][1]
             prev_action = deepcopy(action_i)
             self._prev_action.append(prev_action)
             action_xml = self._action_obj_to_xml(action_i)
