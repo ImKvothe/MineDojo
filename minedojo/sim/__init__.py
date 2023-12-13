@@ -1,4 +1,6 @@
 from .sim import MineDojoSim
+from .rllib.rllib import MineDojoMultiAgent
+from .rllib.rllib import gen_trainer_from_params
 from .inventory import InventoryItem
 from .mc_meta.mc import (
     ALL_ITEMS,
