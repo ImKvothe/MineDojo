@@ -50,6 +50,11 @@ class MineDojoMultiAgent(MultiAgentEnv):
         self.observation_space = self.base_env.observation_space
         print(self.observation_space)
 
+    @classmethod
+    def from_config(cls):
+      base_env = minedojo.make(task_id="harvest_milk", image_size=(288,512))
+      return cls(base_env)
+
 def gen_trainer_from_params(params):
     print(params)
     print(params["ray_params"]["temp_dir"])
