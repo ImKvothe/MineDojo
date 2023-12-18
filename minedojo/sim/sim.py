@@ -211,7 +211,7 @@ class MineDojoSim(gym.Env):
                 ), f"Invalid biome id {specified_biome}"
             else:
                 raise ValueError(f"invalid biome type {specified_biome}")
-        #print("entering MineDojoSim")
+        print("entering MineDojoSim")
         # configure obs handlers
         obs_handlers = [
             handlers.POVObservation(image_size, False),
@@ -504,7 +504,7 @@ class MineDojoSim(gym.Env):
             - ``bool`` - Whether the episode has ended.
             - ``dict`` - Contains auxiliary diagnostic information (helpful for debugging, and sometimes learning).
         """
-        #print("entrando a step")
+        print("entrando a step")
         i = 0
         actions_xml = []
         self._prev_action = []

@@ -1,19 +1,19 @@
 import os
 import minedojo
-from minedojo.sim import InventoryItem
+#from minedojo.sim import InventoryItem
 import ray
 
 from ray.tune.result import DEFAULT_RESULTS_DIR
 from minedojo.sim import *
-
+from minedojo.sim.rllib.rllib import gen_trainer_from_params
 LOCAL_TESTING = True
-
+os.environ["RAY_LOGGING_LEVEL"] = "DEBUG"
 
 def _env_creator(env_config):
-    #from sim.rllib.rllib import MineDojoMultiAgent
-    print("env_config: ")
-    print(env_config)
-    return MineDojoMultiAgent(minedojo.make(task_id="harvest_milk", image_size=(288,512)))
+    from minedojo.sim.rllib.rllib import MineDojoMultiAgent
+    #print("env_config: ")
+    #print(env_config)
+    return MineDojoMultiAgent.from_config()
 
 def my_config():
     ### Resume chekpoint_path ###
@@ -218,6 +218,12 @@ def my_config():
 def run(params):
     run_name = params["experiment_name"]
     trainer = gen_trainer_from_params(params)
+    os.system("pkill -9 -f java")
+    for i in range(params["num_training_iters"]):
+        if params["verbose"]:
+            print("Starting training iteration", i)
+        result = trainer.train()
+    return result
 
 
 if __name__ == "__main__":

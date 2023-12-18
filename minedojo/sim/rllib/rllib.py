@@ -2,18 +2,23 @@ import minedojo
 import logging
 from ray.tune.result import DEFAULT_RESULTS_DIR
 import ray
+import gym
 from datetime import datetime
 timestr = datetime.today().strftime("%Y-%m-%d_%H-%M-%S")
 from ray.tune.registry import register_env
 from ray.rllib.env.multi_agent_env import MultiAgentEnv
 from ray.rllib.algorithms.ppo import PPOConfig
+from ray.rllib.agents.ppo import PPOTrainer
 
 
 class MineDojoMultiAgent(MultiAgentEnv):
     def __init__(self, base_env):
         self.base_env = base_env
         self._episode_id = None
+        print("hello2")
+        super().__init__()
         self._agent_ids = self.reset()
+        print(self.observation_space)
 
     def step(self, action_dict):
         action = [
@@ -56,8 +61,8 @@ class MineDojoMultiAgent(MultiAgentEnv):
       return cls(base_env)
 
 def gen_trainer_from_params(params):
-    print(params)
-    print(params["ray_params"]["temp_dir"])
+    #print(params)
+    #print(params["ray_params"]["temp_dir"])
     if not ray.is_initialized():
         init_params = {
             "ignore_reinit_error": True,
@@ -72,8 +77,7 @@ def gen_trainer_from_params(params):
         register_env("MineDojo_Env", params["ray_params"]["env_creator"])
 
         training_params = params["training_params"]
-        env = minedojo.make(task_id="harvest_milk", image_size=(288,512))
-        print(training_params["num_gpus"])
+        #env = minedojo.make(task_id="harvest_milk", image_size=(288,512))
         logdir_prefix = "{0}_{1}_{2}".format(
         params["experiment_name"], params["training_params"]["seed"], timestr
         )
@@ -81,21 +85,25 @@ def gen_trainer_from_params(params):
         def select_policy():
             return "ppo"
         
+        multi_agent_config = {}
+        #multi_agent_config["policies"] =
+        
         config = PPOConfig()
         config = config.resources(num_gpus=training_params["num_gpus"])
         config = config.rollouts(num_rollout_workers=training_params["num_workers"])
         config = config.training(model={'vf_share_layers' : training_params["vf_share_layers"]})
         config = config.training(lr_schedule=training_params["lr_schedule"], 
                                  use_gae=True,lambda_=training_params["lambda"], 
-                                 use_kl_loss=True, kl_coeff=training_params["kl_coeff"],
+                                 kl_coeff=training_params["kl_coeff"],
                                  sgd_minibatch_size=training_params["sgd_minibatch_size"],
                                  num_sgd_iter=training_params["num_sgd_iter"],
                                  vf_loss_coeff=training_params["vf_loss_coeff"],
                                  clip_param=training_params["clip_param"],
                                  grad_clip=training_params["grad_clip"],
-                                 entropy_coeff=training_params["entropy_coeff_schedule"],
+                                 entropy_coeff_schedule=training_params["entropy_coeff_schedule"],
                                 )
-        algo = config.build(env="MineDojo_Env") 
-        return algo
-         
+        config = config.environment(disable_env_checking=True)
+        trainer = config.environment("MineDojo_Env").build() 
         
+        #trainer = PPOTrainer(env="MineDojo_Env", config={**training_params})
+        return trainer
