@@ -43,8 +43,9 @@ class DeltaInventoryWrapper(gym.Wrapper):
 
         multi_obs_space = {}
         i = 0
-        while i < 2:
-            obs_space = env.observation_space[0]
+        print(agent_obs)
+        for agent in agent_obs:
+            obs_space = env.observation_space[agent]
             obs_space["delta_inv"] = spaces.Dict(
                 {
                     "inc_name_by_craft": spaces.Text(shape=(n_increased,)),
@@ -65,8 +66,8 @@ class DeltaInventoryWrapper(gym.Wrapper):
                     ),
                 }
             )
-            multi_obs_space[i] = obs_space
-            i = i + 1
+            multi_obs_space[agent] = obs_space
+        print(multi_obs_space)
         self.observation_space = multi_obs_space
         self._default_item_name = default_item_name
         self._n_increased = n_increased
