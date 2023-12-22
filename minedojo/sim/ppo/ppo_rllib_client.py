@@ -215,7 +215,18 @@ def my_config():
         "env_creator": _env_creator,
     }
 
+    model_params = {
+        "use_lstm": use_lstm,
+        "NUM_HIDDEN_LAYERS": NUM_HIDDEN_LAYERS,
+        "SIZE_HIDDEN_LAYERS": SIZE_HIDDEN_LAYERS,
+        "NUM_FILTERS": NUM_FILTERS,
+        "NUM_CONV_LAYERS": NUM_CONV_LAYERS,
+        "CELL_SIZE": 256,
+        "D2RL": D2RL,
+    }
+
     params = {
+        "model_params": model_params,
         "training_params": training_params,
         "shared_policy": shared_policy,
         "num_training_iters": num_training_iters,
