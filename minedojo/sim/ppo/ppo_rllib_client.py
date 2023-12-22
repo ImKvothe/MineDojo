@@ -3,16 +3,27 @@ import minedojo
 #from minedojo.sim import InventoryItem
 import ray
 
+
 from ray.tune.result import DEFAULT_RESULTS_DIR
 from minedojo.sim import *
-from minedojo.sim.rllib.rllib import gen_trainer_from_params
+
+import logging
+from ray.tune.result import DEFAULT_RESULTS_DIR
+import ray
+from datetime import datetime
+timestr = datetime.today().strftime("%Y-%m-%d_%H-%M-%S")
+from ray.tune.registry import register_env
+from ray.rllib.env.multi_agent_env import MultiAgentEnv
+from ray.rllib.algorithms.ppo import PPOConfig
+
 LOCAL_TESTING = True
-os.environ["RAY_LOGGING_LEVEL"] = "DEBUG"
+
+
 
 def _env_creator(env_config):
     from minedojo.sim.rllib.rllib import MineDojoMultiAgent
-    #print("env_config: ")
-    #print(env_config)
+    print("env_config: ")
+    print(env_config)
     return MineDojoMultiAgent.from_config()
 
 def my_config():
@@ -222,17 +233,61 @@ def run(params):
     for i in range(params["num_training_iters"]):
         if params["verbose"]:
             print("Starting training iteration", i)
-        result = trainer.train()
+        #result = trainer.train()
     return result
 
+def gen_trainer_from_params(params):
+    print("hello")
+    print(params["ray_params"]["temp_dir"])
+    if not ray.is_initialized():
+        init_params = {
+            "ignore_reinit_error": True,
+            "include_dashboard": False,
+            "_temp_dir": params["ray_params"]["temp_dir"],
+            "log_to_driver": params["verbose"],
+            "logging_level": logging.INFO
+            if params["verbose"]
+            else logging.CRITICAL,
+        }
+        ray.init(**init_params)
+        register_env("MineDojo_Env", params["ray_params"]["env_creator"])
+
+        training_params = params["training_params"]
+        #env = minedojo.make(task_id="harvest_milk", image_size=(288,512))
+        print(training_params["num_gpus"])
+        logdir_prefix = "{0}_{1}_{2}".format(
+        params["experiment_name"], params["training_params"]["seed"], timestr
+        )
+
+        def select_policy():
+            return "ppo"
+
+        config = PPOConfig()
+        config = config.resources(num_gpus=1, num_learner_workers = 0)
+        config = config.rollouts(num_rollout_workers=1)
+        config = config.training(model={'vf_share_layers' : training_params["vf_share_layers"]})
+        config = config.training(lr_schedule=training_params["lr_schedule"],
+                                 use_gae=True,lambda_=training_params["lambda"],
+                                 use_kl_loss=True, kl_coeff=training_params["kl_coeff"],
+                                 sgd_minibatch_size=training_params["sgd_minibatch_size"],
+                                 num_sgd_iter=training_params["num_sgd_iter"],
+                                 vf_loss_coeff=training_params["vf_loss_coeff"],
+                                 clip_param=training_params["clip_param"],
+                                 grad_clip=training_params["grad_clip"],
+                                 entropy_coeff=training_params["entropy_coeff_schedule"],
+                                )
+        algo = config.build(env="MineDojo_Env")
+        return algo
 
 if __name__ == "__main__":
     params = my_config()
     seeds = params["seeds"]
     results = []
     for seed in seeds:
+        # Override the seed
         params["training_params"]["seed"] = seed
+
+        # Do the thing
         result = run(params)
         results.append(result)
-
     print(results)

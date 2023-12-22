@@ -42,8 +42,6 @@ class DeltaInventoryWrapper(gym.Wrapper):
 
 
         multi_obs_space = {}
-        i = 0
-        print(agent_obs)
         for agent in agent_obs:
             obs_space = env.observation_space[agent]
             obs_space["delta_inv"] = spaces.Dict(
@@ -67,7 +65,6 @@ class DeltaInventoryWrapper(gym.Wrapper):
                 }
             )
             multi_obs_space[agent] = obs_space
-        print(multi_obs_space)
         self.observation_space = multi_obs_space
         self._default_item_name = default_item_name
         self._n_increased = n_increased
@@ -98,7 +95,7 @@ class DeltaInventoryWrapper(gym.Wrapper):
 
     def step(self, actions):
         #print("entro al wrapper delta")
-        observation, reward, done, info = self.env.step(actions) 
+        observation, reward, done, info = self.env.step(actions)
         #print("vuelvo al wrapper delta")
         new_obs = self.observation(observation, actions)
 
@@ -415,4 +412,5 @@ class DeltaInventoryWrapper(gym.Wrapper):
                                 }
                             )
             observation[i]["delta_inv"] = delta_obs
-            return observation
+            i = i + 1
+        return observation

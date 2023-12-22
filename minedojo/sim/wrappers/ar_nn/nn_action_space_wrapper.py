@@ -117,16 +117,18 @@ class NNActionSpaceWrapper(gym.Wrapper):
                 elif item_to_craft in MC.ALL_SMELT_ITEMS_NN_ACTIONS:
                     list(noop.items())[i][1]["smelt"] = item_to_craft
                 elif self._strict_check:
-                    raise ValueError(f"Unknown item {item_to_craft} to craft/smelt!")
+                    return noop
+                    #raise ValueError(f"Unknown item {item_to_craft} to craft/smelt!")
             elif fn_action == 5:
                 assert actions[i][7] in list(range(MC.N_INV_SLOTS))
                 item_id = self._inventory_names[i][actions[i][7]].replace(" ", "_")
                 if item_id == "air":
                     if self._strict_check:
-                        raise ValueError(
-                            "Trying to equip air, raise error with strict check."
-                            "You shouldn't execute this action, maybe something wrong with the mask!"
-                        )
+                        return noop
+                        #raise ValueError(
+                        #    "Trying to equip air, raise error with strict check."
+                        #    "You shouldn't execute this action, maybe something wrong with the mask!"
+                        #)
                 else:
                     list(noop.items())[i][1]["equip"] = item_id
             elif fn_action == 6:
@@ -134,10 +136,11 @@ class NNActionSpaceWrapper(gym.Wrapper):
                 item_id = self._inventory_names[i][actions[i][7]].replace(" ", "_")
                 if item_id == "air":
                     if self._strict_check:
-                        raise ValueError(
-                            "Trying to place air, raise error with strict check."
-                            "You shouldn't execute this action, maybe something wrong with the mask!"
-                        )
+                        return noop
+                        #raise ValueError(
+                        #    "Trying to equip air, raise error with strict check."
+                        #    "You shouldn't execute this action, maybe something wrong with the mask!"
+                        #)
                 else:
                     list(noop.items())[i][1]["place"] = item_id
             elif fn_action == 7:
@@ -145,14 +148,16 @@ class NNActionSpaceWrapper(gym.Wrapper):
                 item_id = self._inventory_names[i][actions[i][7]].replace(" ", "_")
                 if item_id == "air":
                     if self._strict_check:
-                        raise ValueError(
-                            "Trying to destroy air, raise error with strict check."
-                            "You shouldn't execute this action, maybe something wrong with the mask!"
-                        )
+                        return noop
+                        #raise ValueError(
+                        #    "Trying to destroy air, raise error with strict check."
+                        #    "You shouldn't execute this action, maybe something wrong with the mask!"
+                        #)
                 else:
                     destroy_item = (True, actions[i][7])
             else:
-                raise ValueError(f"Unknown value {fn_action} for function action")
+                return noop
+                #raise ValueError(f"Unknown value {fn_action} for function action")
             i = i + 1
         return noop, destroy_item
 
