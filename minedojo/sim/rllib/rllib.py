@@ -21,7 +21,8 @@ from ray.rllib.env.multi_agent_env import MultiAgentEnv
 from ray.rllib.algorithms.ppo import PPOConfig
 from ray.rllib.models import ModelCatalog
 LOCAL_TESTING = True
-
+act_space = None
+obs_space = None
 
 N_ALL_ITEMS = len(ALL_ITEMS)
 ACTION_MAP = {
@@ -168,6 +169,8 @@ class MineDojoMultiAgent(MultiAgentEnv):
         self.act_space = gym.spaces.MultiDiscrete(
             np.array([len(ACTION_MAP.keys()), len(ALL_CRAFT_SMELT_ITEMS), N_ALL_ITEMS])
         )
+        global act_space 
+        act_space = self.act_space
         self.observation = gym.spaces.Dict(
             {
                 "rgb": gym.spaces.Box(0, 255, self.base_env.observation_space["agent_0"]["rgb"].shape, np.uint8),
@@ -182,12 +185,15 @@ class MineDojoMultiAgent(MultiAgentEnv):
                 "mask_craft_smelt": gym.spaces.Box(0, 1, (len(ALL_CRAFT_SMELT_ITEMS),), bool),
             }
         )
+        global obs_space
+        obs_space = self.observation
+
         ob_space = {}
         action_space = {}
         for agent in agents:
             ob_space[agent] = self.observation
             action_space[agent] = self.act_space
-
+        
         self.observation_space = gym.spaces.Dict(ob_space)
         self.action_space = gym.spaces.Dict(action_space)
         return agents
@@ -311,13 +317,13 @@ def gen_trainer_from_params(params):
 
         training_params = params["training_params"]
         model_params = params["model_params"]
-        env = minedojo.make(task_id="harvest_milk", image_size=(288,512))
         print(training_params["num_gpus"])
         logdir_prefix = "{0}_{1}_{2}".format(
         params["experiment_name"], params["training_params"]["seed"], timestr
         )
 
-
+        global obs_space
+        global act_space
 
         def gen_policy(policy_type="ppo"):
         # supported policy types thus far
@@ -329,8 +335,8 @@ def gen_trainer_from_params(params):
             }
             return (
                 None,
-                env.observation,
-                env.act_space,
+                obs_space,
+                act_space,
                 config,
             )
 
