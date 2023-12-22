@@ -15,7 +15,8 @@ timestr = datetime.today().strftime("%Y-%m-%d_%H-%M-%S")
 from ray.tune.registry import register_env
 from ray.rllib.env.multi_agent_env import MultiAgentEnv
 from ray.rllib.algorithms.ppo import PPOConfig
-
+from minedojo.sim.ppo.ppo_rllib import RllibPPOModel
+from ray.rllib.models import ModelCatalog
 LOCAL_TESTING = True
 
 
@@ -207,6 +208,8 @@ def my_config():
     }
 
     ray_params = {
+        "custom_model_id": "MyPPOModel",
+        "custom_model_cls": RllibPPOModel,
         "temp_dir" : temp_dir,
         "env_creator": _env_creator,
     }
@@ -251,7 +254,10 @@ def gen_trainer_from_params(params):
         }
         ray.init(**init_params)
         register_env("MineDojo_Env", params["ray_params"]["env_creator"])
-
+        ModelCatalog.register_custom_model(
+        params["ray_params"]["custom_model_id"],
+        params["ray_params"]["custom_model_cls"],
+    )
         training_params = params["training_params"]
         #env = minedojo.make(task_id="harvest_milk", image_size=(288,512))
         print(training_params["num_gpus"])
