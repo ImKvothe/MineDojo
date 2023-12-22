@@ -519,7 +519,7 @@ class MineDojoSim(gym.Env):
             #print(action_xml)
             actions_xml.append(action_xml)
             i = i + 1 
-        #print(actions_xml)
+        print(actions_xml)
         step_tuple = self._bridge_env.step(actions_xml)
         #print("vuelta a sim")
         step_success, raw_obs = step_tuple.step_success, step_tuple.raw_obs

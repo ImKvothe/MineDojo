@@ -70,7 +70,6 @@ class NNActionSpaceWrapper(gym.Wrapper):
         assert self.action_space.contains(actions[0]) #CHECK
         destroy_item = (False, None)
         noop = self.env.action_space.no_op()
-        agents_act = self.action_space
         items = list(noop.items())
         i = 0
         while i < len(items):
