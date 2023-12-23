@@ -504,7 +504,7 @@ class MineDojoSim(gym.Env):
             - ``bool`` - Whether the episode has ended.
             - ``dict`` - Contains auxiliary diagnostic information (helpful for debugging, and sometimes learning).
         """
-        print("entrando a step")
+        #print("entrando a step")
         i = 0
         actions_xml = []
         self._prev_action = []
@@ -519,7 +519,7 @@ class MineDojoSim(gym.Env):
             #print(action_xml)
             actions_xml.append(action_xml)
             i = i + 1 
-        print(actions_xml)
+        #print(actions_xml)
         step_tuple = self._bridge_env.step(actions_xml)
         #print("vuelta a sim")
         step_success, raw_obs = step_tuple.step_success, step_tuple.raw_obs
