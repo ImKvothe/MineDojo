@@ -76,7 +76,6 @@ class MineDojoMultiAgent(MultiAgentEnv):
         print(self.act_space.shape)
 
     def step(self, action_dict):
-        print(self._inventory)
         action1 = self._convert_action(action_dict[self.curr_agents[0]])
         action2 = self._convert_action(action_dict[self.curr_agents[1]])
         next_pitch1 = self._pos1["pitch"] + (action1[3] - 12) * 15
@@ -92,7 +91,6 @@ class MineDojoMultiAgent(MultiAgentEnv):
             action1,
             action2,
         ]
-        print(actions)
         obs, reward, done, info = self.base_env.step(actions)
 
         self._pos1 = {
@@ -114,11 +112,11 @@ class MineDojoMultiAgent(MultiAgentEnv):
         obs0 = OrderedDict(sorted(self._convert_obs(obs[0]).items()))
         obs1 = OrderedDict(sorted(self._convert_obs(obs[1]).items()))
         obs = {self.curr_agents[0]: obs0, self.curr_agents[1]: obs1}
-        print(actions)
 
         rewards = {self.curr_agents[0]: reward[0], self.curr_agents[1]: reward[1]}
         dones = {self.curr_agents[0]: done, self.curr_agents[1]: done}  ## Cambiar done para cada agente
         terminated = dones
+        terminated["__all__"] = done
         infos = {self.curr_agents[0]: info[0], self.curr_agents[1]: info[1]}
 
         return obs, rewards, dones, terminated, infos
@@ -182,7 +180,7 @@ class MineDojoMultiAgent(MultiAgentEnv):
                 "inventory_max": gym.spaces.Box(0.0, np.inf, (N_ALL_ITEMS,), np.float64),
                 "inventory_delta": gym.spaces.Box(-np.inf, np.inf, (N_ALL_ITEMS,), np.float64),
                 "equipment": gym.spaces.Box(0.0, 1.0, (N_ALL_ITEMS,), np.int32),
-                "life_stats": gym.spaces.Box(0.0, np.array([20.0, 20.0, 300.0]), (3,), np.float32),
+                "life_stats": gym.spaces.Box(-20.0, np.array([20.0, 20.0, 300.0]), (3,), np.float32),
                 "mask_action_type": gym.spaces.Box(0, 1, (len(ACTION_MAP),), bool),
                 "mask_equip_place": gym.spaces.Box(0, 1, (N_ALL_ITEMS,), bool),
                 "mask_destroy": gym.spaces.Box(0, 1, (N_ALL_ITEMS,), bool),
@@ -298,19 +296,17 @@ class MineDojoMultiAgent(MultiAgentEnv):
         }
 
 def gen_trainer_from_params(params):
-    print("hello")
-    print(params["ray_params"]["temp_dir"])
     if not ray.is_initialized():
         init_params = {
             "ignore_reinit_error": True,
-            "include_dashboard": False,
             "_temp_dir": params["ray_params"]["temp_dir"],
             "log_to_driver": params["verbose"],
             "logging_level": logging.INFO
             if params["verbose"]
             else logging.CRITICAL,
         }
-        ray.init(**init_params)
+        context = ray.init(**init_params)
+        print(context.dashboard_url)
         register_env("MineDojo_Env", params["ray_params"]["env_creator"])
         ModelCatalog.register_custom_model(
             params["ray_params"]["custom_model_id"],
@@ -321,7 +317,6 @@ def gen_trainer_from_params(params):
 
         training_params = params["training_params"]
         model_params = params["model_params"]
-        print(training_params["num_gpus"])
         logdir_prefix = "{0}_{1}_{2}".format(
         params["experiment_name"], params["training_params"]["seed"], timestr
         )
@@ -362,7 +357,7 @@ def gen_trainer_from_params(params):
         multi_agent_config["policies_to_train"] = {"ppo"}
 
         config = PPOConfig()
-        config = config.resources(num_gpus=0, num_learner_workers = 0, num_cpus_per_worker = 2)
+        config = config.resources(num_gpus=0, num_cpus_per_worker = 2)
         config = config.rollouts(num_rollout_workers=1)
         config = config.framework(framework = "tf")
         config = config.training(model={'vf_share_layers' : training_params["vf_share_layers"]})

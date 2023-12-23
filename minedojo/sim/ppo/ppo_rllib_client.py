@@ -72,7 +72,7 @@ def my_config():
     sgd_minibatch_size = 2000 if not LOCAL_TESTING else 800
 
     # Rollout length
-    rollout_fragment_length = 400
+    rollout_fragment_length = 200
 
     # Whether all PPO agents should share the same policy network
     shared_policy = True
@@ -245,7 +245,7 @@ def my_config():
 def run(params):
     run_name = params["experiment_name"]
     trainer = gen_trainer_from_params(params)
-    os.system("pkill -9 -f java")
+    #os.system("pkill -9 -f java")
     result = {}
     for i in range(params["num_training_iters"]):
         if params["verbose"]:
