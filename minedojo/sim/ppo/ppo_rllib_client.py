@@ -1,3 +1,4 @@
+
 import os
 import minedojo
 #from minedojo.sim import InventoryItem
@@ -245,10 +246,11 @@ def run(params):
     run_name = params["experiment_name"]
     trainer = gen_trainer_from_params(params)
     os.system("pkill -9 -f java")
+    result = {}
     for i in range(params["num_training_iters"]):
         if params["verbose"]:
             print("Starting training iteration", i)
-        #result = trainer.train()
+        result = trainer.train()
     return result
 
 
@@ -264,3 +266,4 @@ if __name__ == "__main__":
         result = run(params)
         results.append(result)
     print(results)
+  

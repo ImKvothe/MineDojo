@@ -1,3 +1,4 @@
+
 import minedojo
 import logging
 from ray.tune.result import DEFAULT_RESULTS_DIR
@@ -70,6 +71,9 @@ class MineDojoMultiAgent(MultiAgentEnv):
         super().__init__()
         print("hello2")
         self._agent_ids = set(self.reset()[0].keys())
+        print("to copy:")
+        print(self.observation["rgb"].shape)
+        print(self.act_space.shape)
 
     def step(self, action_dict):
         print(self._inventory)
@@ -169,7 +173,7 @@ class MineDojoMultiAgent(MultiAgentEnv):
         self.act_space = gym.spaces.MultiDiscrete(
             np.array([len(ACTION_MAP.keys()), len(ALL_CRAFT_SMELT_ITEMS), N_ALL_ITEMS])
         )
-        global act_space 
+        global act_space
         act_space = self.act_space
         self.observation = gym.spaces.Dict(
             {
@@ -193,7 +197,7 @@ class MineDojoMultiAgent(MultiAgentEnv):
         for agent in agents:
             ob_space[agent] = self.observation
             action_space[agent] = self.act_space
-        
+
         self.observation_space = gym.spaces.Dict(ob_space)
         self.action_space = gym.spaces.Dict(action_space)
         return agents
@@ -313,7 +317,7 @@ def gen_trainer_from_params(params):
             params["ray_params"]["custom_model_cls"],
         )
 
-        
+
 
         training_params = params["training_params"]
         model_params = params["model_params"]
@@ -324,6 +328,9 @@ def gen_trainer_from_params(params):
 
         global obs_space
         global act_space
+        print("before policy:")
+        print(obs_space)
+        print(act_space)
 
         def gen_policy(policy_type="ppo"):
         # supported policy types thus far
@@ -340,10 +347,9 @@ def gen_trainer_from_params(params):
                 config,
             )
 
-
         def select_policy(agent_id, episode, worker, **kwargs):
-            return "ppo"
-            
+          return "ppo"
+
 
         multi_agent_config = {}
         all_policies = ["ppo"]
@@ -356,8 +362,9 @@ def gen_trainer_from_params(params):
         multi_agent_config["policies_to_train"] = {"ppo"}
 
         config = PPOConfig()
-        config = config.resources(num_gpus=1, num_learner_workers = 0)
+        config = config.resources(num_gpus=0, num_learner_workers = 0, num_cpus_per_worker = 2)
         config = config.rollouts(num_rollout_workers=1)
+        config = config.framework(framework = "tf")
         config = config.training(model={'vf_share_layers' : training_params["vf_share_layers"]})
         config = config.training(lr_schedule=training_params["lr_schedule"],
                                  use_gae=True,lambda_=training_params["lambda"],
@@ -372,3 +379,4 @@ def gen_trainer_from_params(params):
         config = config.multi_agent(policies = multi_agent_config["policies"], policy_mapping_fn = multi_agent_config["policy_mapping_fn"], policies_to_train =  multi_agent_config["policies_to_train"] )
         algo = config.build(env="MineDojo_Env")
         return algo
+

@@ -1,3 +1,4 @@
+
 import numpy as np
 import tensorflow as tf
 from ray.rllib.models.tf.recurrent_net import RecurrentNetwork
@@ -23,7 +24,9 @@ class RllibPPOModel(TFModelV2):
         )
         # params we got to pass in from the call to "run"
         custom_params = model_config["custom_model_config"]
-
+        print("obs:")
+        print(obs_space)
+        print(action_space)
         ## Parse custom network params
         num_hidden_layers = custom_params["NUM_HIDDEN_LAYERS"]
         size_hidden_layers = custom_params["SIZE_HIDDEN_LAYERS"]
@@ -34,11 +37,11 @@ class RllibPPOModel(TFModelV2):
 
         ## Create graph of custom network. It will under a shared tf scope such that all agents
         ## use the same model
-        self.inputs = tf.keras.Input(
-            shape=obs_space.shape, name="observations"
+        self.input1 = tf.keras.Input(
+            shape=(3, 288, 512), name="rgb"
         )
-        out = self.inputs
-
+        out = self.input1
+        print(out)
         # Apply initial conv layer with a larger kenel (why?)
         if num_convs > 0:
             y = tf.keras.layers.Conv2D(
@@ -76,7 +79,7 @@ class RllibPPOModel(TFModelV2):
         # Linear last layer for value function branch of model
         value_out = tf.keras.layers.Dense(1)(out)
 
-        self.base_model = tf.keras.Model(self.inputs, [layer_out, value_out])
+        self.base_model = tf.keras.Model(self.input1, [layer_out, value_out])
 
     def forward(self, input_dict, state=None, seq_lens=None):
         model_out, self._value_out = self.base_model(input_dict["obs"])
