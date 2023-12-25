@@ -22,11 +22,9 @@ from minedojo.sim.rllib.rllib import gen_trainer_from_params
 LOCAL_TESTING = True
 
 
-
 def _env_creator(env_config):
     from minedojo.sim.rllib.rllib import MineDojoMultiAgent
-    print("env_config: ")
-    print(env_config)
+
     return MineDojoMultiAgent.from_config()
 
 def my_config():
@@ -65,20 +63,20 @@ def my_config():
 
     # How many environment timesteps will be simulated (across all environments)
     # for one set of gradient updates. Is divided equally across environments
-    train_batch_size = 12000 if not LOCAL_TESTING else 800
+    train_batch_size = 12000 if not LOCAL_TESTING else 200
 
     # size of minibatches we divide up each batch into before
     # performing gradient steps
-    sgd_minibatch_size = 2000 if not LOCAL_TESTING else 800
+    sgd_minibatch_size = 2000 if not LOCAL_TESTING else 200
 
     # Rollout length
-    rollout_fragment_length = 200
+    rollout_fragment_length = 100
 
     # Whether all PPO agents should share the same policy network
     shared_policy = True
 
     # Number of training iterations to run
-    num_training_iters = 420 if not LOCAL_TESTING else 2
+    num_training_iters = 420 if not LOCAL_TESTING else 1
 
     # Stepsize of SGD.
     lr = 5e-5
@@ -125,7 +123,7 @@ def my_config():
     evaluation_interval = 50 if not LOCAL_TESTING else 1
 
     # How many timesteps should be in an evaluation episode
-    evaluation_ep_length = 400
+    evaluation_ep_length = 100
 
     # Number of games to simulation each evaluation
     evaluation_num_games = 1
@@ -169,7 +167,7 @@ def my_config():
     experiment_name = "{0}_{1}_{2}".format("PPO", "MineDojo", params_str)
 
     # Max episode length
-    horizon = 400
+    horizon = 100
 
     # Constant by which shaped rewards are multiplied by when calculating total reward
     reward_shaping_factor = 1.0
@@ -194,10 +192,6 @@ def my_config():
         "num_gpus": num_gpus,
         "seed": seed,
         "evaluation_interval": evaluation_interval,
-        "entropy_coeff_schedule": [
-            (0, entropy_coeff_start),
-            (entropy_coeff_horizon, entropy_coeff_end),
-        ],
         "eager_tracing": eager,
         "log_level": "WARN" if verbose else "ERROR",
     }

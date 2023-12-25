@@ -3,7 +3,8 @@ import numpy as np
 import tensorflow as tf
 from ray.rllib.models.tf.recurrent_net import RecurrentNetwork
 from ray.rllib.models.tf.tf_modelv2 import TFModelV2
-
+from minedojo.sim import ALL_CRAFT_SMELT_ITEMS, ALL_ITEMS
+N_ALL_ITEMS = len(ALL_ITEMS)
 
 class RllibPPOModel(TFModelV2):
     """
@@ -24,9 +25,6 @@ class RllibPPOModel(TFModelV2):
         )
         # params we got to pass in from the call to "run"
         custom_params = model_config["custom_model_config"]
-        print("obs:")
-        print(obs_space)
-        print(action_space)
         ## Parse custom network params
         num_hidden_layers = custom_params["NUM_HIDDEN_LAYERS"]
         size_hidden_layers = custom_params["SIZE_HIDDEN_LAYERS"]
@@ -37,11 +35,51 @@ class RllibPPOModel(TFModelV2):
 
         ## Create graph of custom network. It will under a shared tf scope such that all agents
         ## use the same model
-        self.input1 = tf.keras.Input(
-            shape=(3, 288, 512), name="rgb"
+
+        self.rgb = tf.keras.Input(
+            shape = (3, 288, 512), name = "rgb"
         )
-        out = self.input1
-        print(out)
+
+        self.equipment = tf.keras.Input(
+            shape = (N_ALL_ITEMS,), name = "equipment"
+        )
+
+        self.inventory = tf.keras.Input(
+            shape = (N_ALL_ITEMS,), name = "inventory"
+        )
+
+        self.inventory_delta = tf.keras.Input(
+            shape = (N_ALL_ITEMS,), name = "inventory_delta"
+        )
+
+        self.inventory_max = tf.keras.Input(
+            shape = (N_ALL_ITEMS,), name = "inventory_max"
+        )
+
+        self.life_stats = tf.keras.Input(
+            shape = (3,), name = "life_stats"
+        )
+
+        self.mask_action_type = tf.keras.Input(
+            shape = (19,), name = "mask_action_type"
+        )
+
+        self.mask_craft_smelt = tf.keras.Input(
+            shape = (len(ALL_CRAFT_SMELT_ITEMS)), name= "mask_craft_smelt"
+        )
+
+        self.mask_destroy = tf.keras.Input(
+            shape = (N_ALL_ITEMS,), name = "mask_destroy"
+        )
+
+        self.mask_equip_place = tf.keras.Input(
+            shape = (N_ALL_ITEMS,), name = "mask_equip_place"
+        )
+
+        combined_inventory = tf.keras.layers.Concatenate()([self.inventory, self.inventory_delta, self.inventory_max])
+        self.combined_inventory = combined_inventory
+        out1 = self.rgb
+        out2 = self.combined_inventory
         # Apply initial conv layer with a larger kenel (why?)
         if num_convs > 0:
             y = tf.keras.layers.Conv2D(
@@ -51,38 +89,42 @@ class RllibPPOModel(TFModelV2):
                 activation=tf.nn.leaky_relu,
                 name="conv_initial",
             )
-            out = y(out)
+            out1 = y(out1)
 
         # Apply remaining conv layers, if any
         for i in range(0, num_convs - 1):
             padding = "same" if i < num_convs - 2 else "valid"
-            out = tf.keras.layers.Conv2D(
+            outa = tf.keras.layers.Conv2D(
                 filters=num_filters,
                 kernel_size=[3, 3],
                 padding=padding,
                 activation=tf.nn.leaky_relu,
                 name="conv_{}".format(i),
-            )(out)
+            )
+
+            out1 = outa(out1)
 
         # Apply dense hidden layers, if any
-        conv_out = tf.keras.layers.Flatten()(out)
-        out = conv_out
+        conv_out1 = tf.keras.layers.Flatten()(out1)
+        conv_out2 = tf.keras.layers.Flatten()(out2)
+        self.combined_inputs = tf.keras.layers.Concatenate()([conv_out1, conv_out2])
+        out1 = self.combined_inputs
         for i in range(num_hidden_layers):
-            if i > 0 and d2rl:
-                out = tf.keras.layers.Concatenate()([out, conv_out])
-            out = tf.keras.layers.Dense(size_hidden_layers)(out)
-            out = tf.keras.layers.LeakyReLU()(out)
+            #if i > 0 and d2rl:
+                #out1 = tf.keras.layers.Concatenate()([out1, conv_out1])
+            out1 = tf.keras.layers.Dense(size_hidden_layers)(out1)
+            out1 = tf.keras.layers.LeakyReLU()(out1)
 
         # Linear last layer for action distribution logits
-        layer_out = tf.keras.layers.Dense(self.num_outputs)(out)
+        layer_out = tf.keras.layers.Dense(self.num_outputs)(out1)
 
         # Linear last layer for value function branch of model
-        value_out = tf.keras.layers.Dense(1)(out)
+        value_out = tf.keras.layers.Dense(1)(out1)
 
-        self.base_model = tf.keras.Model(self.input1, [layer_out, value_out])
+        self.base_model = tf.keras.Model([self.rgb, self.inventory, self.inventory_delta, self.inventory_max], [layer_out, value_out])
 
     def forward(self, input_dict, state=None, seq_lens=None):
-        model_out, self._value_out = self.base_model(input_dict["obs"])
+        model_out, self._value_out= self.base_model(input_dict["obs"])
         return model_out, state
 
     def value_function(self):

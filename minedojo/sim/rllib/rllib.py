@@ -24,6 +24,7 @@ from ray.rllib.models import ModelCatalog
 LOCAL_TESTING = True
 act_space = None
 obs_space = None
+iteration = 200
 
 N_ALL_ITEMS = len(ALL_ITEMS)
 ACTION_MAP = {
@@ -69,57 +70,8 @@ class MineDojoMultiAgent(MultiAgentEnv):
         self.base_env = base_env
         self._episode_id = None
         super().__init__()
-        print("hello2")
+
         self._agent_ids = set(self.reset()[0].keys())
-        print("to copy:")
-        print(self.observation["rgb"].shape)
-        print(self.act_space.shape)
-
-    def step(self, action_dict):
-        action1 = self._convert_action(action_dict[self.curr_agents[0]])
-        action2 = self._convert_action(action_dict[self.curr_agents[1]])
-        next_pitch1 = self._pos1["pitch"] + (action1[3] - 12) * 15
-        next_pitch2 = self._pos2["pitch"] + (action2[3] - 12) * 15
-
-        if not (self._pitch_limits[0] <= next_pitch1 <= self._pitch_limits[1]):
-            action1[3] = 12
-
-        if not (self._pitch_limits[0] <= next_pitch2 <= self._pitch_limits[1]):
-            action2[3] = 12
-
-        actions = [
-            action1,
-            action2,
-        ]
-        obs, reward, done, info = self.base_env.step(actions)
-
-        self._pos1 = {
-            "x": float(obs[0]["location_stats"]["pos"][0]),
-            "y": float(obs[0]["location_stats"]["pos"][1]),
-            "z": float(obs[0]["location_stats"]["pos"][2]),
-            "pitch": float(obs[0]["location_stats"]["pitch"].item()),
-            "yaw": float(obs[0]["location_stats"]["yaw"].item()),
-        }
-
-        self._pos2 = {
-            "x": float(obs[1]["location_stats"]["pos"][0]),
-            "y": float(obs[1]["location_stats"]["pos"][1]),
-            "z": float(obs[1]["location_stats"]["pos"][2]),
-            "pitch": float(obs[1]["location_stats"]["pitch"].item()),
-            "yaw": float(obs[1]["location_stats"]["yaw"].item()),
-        }
-
-        obs0 = OrderedDict(sorted(self._convert_obs(obs[0]).items()))
-        obs1 = OrderedDict(sorted(self._convert_obs(obs[1]).items()))
-        obs = {self.curr_agents[0]: obs0, self.curr_agents[1]: obs1}
-
-        rewards = {self.curr_agents[0]: reward[0], self.curr_agents[1]: reward[1]}
-        dones = {self.curr_agents[0]: done, self.curr_agents[1]: done}  ## Cambiar done para cada agente
-        terminated = dones
-        terminated["__all__"] = done
-        infos = {self.curr_agents[0]: info[0], self.curr_agents[1]: info[1]}
-
-        return obs, rewards, dones, terminated, infos
 
     def reset(self, *, seed=None, options=None):
         obs = self.base_env.reset()
@@ -162,6 +114,58 @@ class MineDojoMultiAgent(MultiAgentEnv):
         obs1 = OrderedDict(sorted(self._convert_obs(obs[1]).items()))
         obs = {self.curr_agents[0]: obs0, self.curr_agents[1]: obs1}
         return obs, info
+
+
+    def step(self, action_dict):
+        global iteration
+        iteration = iteration - 1 
+        if (iteration == 0):
+          print(iteration)
+        action1 = self._convert_action(action_dict[self.curr_agents[0]])
+        action2 = self._convert_action(action_dict[self.curr_agents[1]])
+        next_pitch1 = self._pos1["pitch"] + (action1[3] - 12) * 15
+        next_pitch2 = self._pos2["pitch"] + (action2[3] - 12) * 15
+
+        if not (self._pitch_limits[0] <= next_pitch1 <= self._pitch_limits[1]):
+            action1[3] = 12
+
+        if not (self._pitch_limits[0] <= next_pitch2 <= self._pitch_limits[1]):
+            action2[3] = 12
+
+        actions = [
+            action1,
+            action2,
+        ]
+        obs, reward, done, info = self.base_env.step(actions)
+
+        self._pos1 = {
+            "x": float(obs[0]["location_stats"]["pos"][0]),
+            "y": float(obs[0]["location_stats"]["pos"][1]),
+            "z": float(obs[0]["location_stats"]["pos"][2]),
+            "pitch": float(obs[0]["location_stats"]["pitch"].item()),
+            "yaw": float(obs[0]["location_stats"]["yaw"].item()),
+        }
+
+        self._pos2 = {
+            "x": float(obs[1]["location_stats"]["pos"][0]),
+            "y": float(obs[1]["location_stats"]["pos"][1]),
+            "z": float(obs[1]["location_stats"]["pos"][2]),
+            "pitch": float(obs[1]["location_stats"]["pitch"].item()),
+            "yaw": float(obs[1]["location_stats"]["yaw"].item()),
+        }
+
+        obs0 = OrderedDict(sorted(self._convert_obs(obs[0]).items()))
+        obs1 = OrderedDict(sorted(self._convert_obs(obs[1]).items()))
+        obs = {self.curr_agents[0]: obs0, self.curr_agents[1]: obs1}
+        if (iteration == 0):
+          done = True
+        rewards = {self.curr_agents[0]: reward[0], self.curr_agents[1]: reward[1]}
+        dones = {self.curr_agents[0]: done, self.curr_agents[1]: done}  ## Cambiar done para cada agente
+        terminated = dones
+        terminated["__all__"] = done
+        infos = {self.curr_agents[0]: info[0], self.curr_agents[1]: info[1]}
+
+        return obs, rewards, dones, terminated, infos
 
     def _populate_agents(self):
         agents = ["ppo_0", "ppo_1"]
@@ -304,9 +308,9 @@ def gen_trainer_from_params(params):
             "logging_level": logging.INFO
             if params["verbose"]
             else logging.CRITICAL,
+            "object_store_memory": 5*10**9,
         }
         context = ray.init(**init_params)
-        print(context.dashboard_url)
         register_env("MineDojo_Env", params["ray_params"]["env_creator"])
         ModelCatalog.register_custom_model(
             params["ray_params"]["custom_model_id"],
@@ -323,9 +327,6 @@ def gen_trainer_from_params(params):
 
         global obs_space
         global act_space
-        print("before policy:")
-        print(obs_space)
-        print(act_space)
 
         def gen_policy(policy_type="ppo"):
         # supported policy types thus far
@@ -358,18 +359,17 @@ def gen_trainer_from_params(params):
 
         config = PPOConfig()
         config = config.resources(num_gpus=0, num_cpus_per_worker = 2)
-        config = config.rollouts(num_rollout_workers=1)
+        config = config.rollouts(num_rollout_workers=1, rollout_fragment_length = training_params["rollout_fragment_length"])
         config = config.framework(framework = "tf")
         config = config.training(model={'vf_share_layers' : training_params["vf_share_layers"]})
         config = config.training(lr_schedule=training_params["lr_schedule"],
                                  use_gae=True,lambda_=training_params["lambda"],
                                  use_kl_loss=True, kl_coeff=training_params["kl_coeff"],
-                                 sgd_minibatch_size=training_params["sgd_minibatch_size"],
                                  num_sgd_iter=training_params["num_sgd_iter"],
                                  vf_loss_coeff=training_params["vf_loss_coeff"],
                                  clip_param=training_params["clip_param"],
                                  grad_clip=training_params["grad_clip"],
-                                 entropy_coeff=training_params["entropy_coeff_schedule"],
+                                 train_batch_size = training_params["train_batch_size"]
                                 )
         config = config.multi_agent(policies = multi_agent_config["policies"], policy_mapping_fn = multi_agent_config["policy_mapping_fn"], policies_to_train =  multi_agent_config["policies_to_train"] )
         algo = config.build(env="MineDojo_Env")
