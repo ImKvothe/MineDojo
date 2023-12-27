@@ -67,7 +67,7 @@ def my_config():
 
     # size of minibatches we divide up each batch into before
     # performing gradient steps
-    sgd_minibatch_size = 2000 if not LOCAL_TESTING else 200
+    sgd_minibatch_size = 2000 if not LOCAL_TESTING else 4
 
     # Rollout length
     rollout_fragment_length = 100

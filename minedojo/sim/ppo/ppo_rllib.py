@@ -65,7 +65,7 @@ class RllibPPOModel(TFModelV2):
         )
 
         self.mask_craft_smelt = tf.keras.Input(
-            shape = (len(ALL_CRAFT_SMELT_ITEMS)), name= "mask_craft_smelt"
+            shape = (len(ALL_CRAFT_SMELT_ITEMS),), name= "mask_craft_smelt"
         )
 
         self.mask_destroy = tf.keras.Input(
@@ -76,10 +76,12 @@ class RllibPPOModel(TFModelV2):
             shape = (N_ALL_ITEMS,), name = "mask_equip_place"
         )
 
-        combined_inventory = tf.keras.layers.Concatenate()([self.inventory, self.inventory_delta, self.inventory_max])
-        self.combined_inventory = combined_inventory
+        combined_inputs = tf.keras.layers.Concatenate()([self.equipment, self.inventory, self.inventory_delta, self.inventory_max, self.life_stats,
+        self.mask_action_type, self.mask_craft_smelt, self.mask_destroy, self.mask_equip_place])
+
+        self.combined_inputs = combined_inputs
         out1 = self.rgb
-        out2 = self.combined_inventory
+        out2 = self.combined_inputs
         # Apply initial conv layer with a larger kenel (why?)
         if num_convs > 0:
             y = tf.keras.layers.Conv2D(
@@ -121,7 +123,8 @@ class RllibPPOModel(TFModelV2):
         # Linear last layer for value function branch of model
         value_out = tf.keras.layers.Dense(1)(out1)
 
-        self.base_model = tf.keras.Model([self.rgb, self.inventory, self.inventory_delta, self.inventory_max], [layer_out, value_out])
+        self.base_model = tf.keras.Model([self.rgb, self.equipment, self.inventory, self.inventory_delta, self.inventory_max,  self.life_stats,
+        self.mask_action_type, self.mask_craft_smelt, self.mask_destroy, self.mask_equip_place], [layer_out, value_out])
 
     def forward(self, input_dict, state=None, seq_lens=None):
         model_out, self._value_out= self.base_model(input_dict["obs"])

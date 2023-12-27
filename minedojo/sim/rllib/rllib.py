@@ -118,7 +118,7 @@ class MineDojoMultiAgent(MultiAgentEnv):
 
     def step(self, action_dict):
         global iteration
-        iteration = iteration - 1 
+        iteration = iteration - 1
         if (iteration == 0):
           print(iteration)
         action1 = self._convert_action(action_dict[self.curr_agents[0]])
@@ -303,6 +303,7 @@ def gen_trainer_from_params(params):
     if not ray.is_initialized():
         init_params = {
             "ignore_reinit_error": True,
+            "num_gpus": 2,
             "_temp_dir": params["ray_params"]["temp_dir"],
             "log_to_driver": params["verbose"],
             "logging_level": logging.INFO
@@ -328,7 +329,7 @@ def gen_trainer_from_params(params):
         global obs_space
         global act_space
 
-        def gen_policy(policy_type="ppo"):
+        def gen_policy():
         # supported policy types thus far
             config = {
                 "model": {
@@ -358,18 +359,25 @@ def gen_trainer_from_params(params):
         multi_agent_config["policies_to_train"] = {"ppo"}
 
         config = PPOConfig()
-        config = config.resources(num_gpus=0, num_cpus_per_worker = 2)
+        config = config.resources(num_gpus=0, num_cpus_per_worker = 2, num_gpus_per_worker = 0)
         config = config.rollouts(num_rollout_workers=1, rollout_fragment_length = training_params["rollout_fragment_length"])
-        config = config.framework(framework = "tf")
-        config = config.training(model={'vf_share_layers' : training_params["vf_share_layers"]})
+        config = config.framework(framework = "tf", tf_session_args = {"intra_op_parallelism_threads": 2,"inter_op_parallelism_threads": 2,
+                                  "gpu_options": {"allow_growth": True,},"log_device_placement": False,"device_count": {"CPU": 1, "GPU" : 2},
+                                  "allow_soft_placement": True,})
+        config = config.training(model = {"vf_share_layers" : training_params["vf_share_layers"]})
         config = config.training(lr_schedule=training_params["lr_schedule"],
-                                 use_gae=True,lambda_=training_params["lambda"],
-                                 use_kl_loss=True, kl_coeff=training_params["kl_coeff"],
+                                 use_gae=True,
+                                 lambda_=training_params["lambda"],
+                                 use_kl_loss=True,
+                                 kl_coeff=training_params["kl_coeff"],
                                  num_sgd_iter=training_params["num_sgd_iter"],
                                  vf_loss_coeff=training_params["vf_loss_coeff"],
                                  clip_param=training_params["clip_param"],
                                  grad_clip=training_params["grad_clip"],
-                                 train_batch_size = training_params["train_batch_size"]
+                                 train_batch_size = training_params["train_batch_size"],
+                                 sgd_minibatch_size = 4,
+                                 entropy_coeff = 0.2,
+                                 vf_share_layers = True
                                 )
         config = config.multi_agent(policies = multi_agent_config["policies"], policy_mapping_fn = multi_agent_config["policy_mapping_fn"], policies_to_train =  multi_agent_config["policies_to_train"] )
         algo = config.build(env="MineDojo_Env")
