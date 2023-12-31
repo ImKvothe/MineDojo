@@ -352,7 +352,7 @@ def gen_trainer_from_params(params):
         all_policies = ["ppo"]
 
         multi_agent_config["policies"] = {
-            policy: gen_policy(policy) for policy in all_policies
+            policy: gen_policy() for policy in all_policies
         }
 
         multi_agent_config["policy_mapping_fn"] = select_policy

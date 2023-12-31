@@ -60,24 +60,23 @@ class RllibPPOModel(TFModelV2):
             shape = (3,), name = "life_stats"
         )
 
-        self.mask_action_type = tf.keras.Input(
-            shape = (19,), name = "mask_action_type"
-        )
+        #self.mask_action_type = tf.keras.Input(
+        #    shape = (19,), name = "mask_action_type"
+        #)
 
-        self.mask_craft_smelt = tf.keras.Input(
-            shape = (len(ALL_CRAFT_SMELT_ITEMS),), name= "mask_craft_smelt"
-        )
+        #self.mask_craft_smelt = tf.keras.Input(
+        #    shape = (len(ALL_CRAFT_SMELT_ITEMS),), name= "mask_craft_smelt"
+        #)
 
-        self.mask_destroy = tf.keras.Input(
-            shape = (N_ALL_ITEMS,), name = "mask_destroy"
-        )
+        #self.mask_destroy = tf.keras.Input(
+        #    shape = (N_ALL_ITEMS,), name = "mask_destroy"
+        #)
 
-        self.mask_equip_place = tf.keras.Input(
-            shape = (N_ALL_ITEMS,), name = "mask_equip_place"
-        )
+        #self.mask_equip_place = tf.keras.Input(
+        #    shape = (N_ALL_ITEMS,), name = "mask_equip_place"
+        #)
 
-        combined_inputs = tf.keras.layers.Concatenate()([self.equipment, self.inventory, self.inventory_delta, self.inventory_max, self.life_stats,
-        self.mask_action_type, self.mask_craft_smelt, self.mask_destroy, self.mask_equip_place])
+        combined_inputs = tf.keras.layers.Concatenate()([self.equipment, self.inventory, self.inventory_delta, self.inventory_max, self.life_stats])
 
         self.combined_inputs = combined_inputs
         out1 = self.rgb
@@ -123,12 +122,20 @@ class RllibPPOModel(TFModelV2):
         # Linear last layer for value function branch of model
         value_out = tf.keras.layers.Dense(1)(out1)
 
-        self.base_model = tf.keras.Model([self.rgb, self.equipment, self.inventory, self.inventory_delta, self.inventory_max,  self.life_stats,
-        self.mask_action_type, self.mask_craft_smelt, self.mask_destroy, self.mask_equip_place], [layer_out, value_out])
+        self.base_model = tf.keras.Model([self.rgb, self.equipment, self.inventory, self.inventory_delta, self.inventory_max, self.life_stats,], [layer_out, value_out])
 
     def forward(self, input_dict, state=None, seq_lens=None):
         model_out, self._value_out= self.base_model(input_dict["obs"])
         return model_out, state
+        #print(model_out)
+        #action_type_mask = input_dict["obs"]["mask_action_type"]
+        #expanded_mask = tf.expand_dims(action_type_mask, axis=1)
+        #tiled_mask = tf.tile(expanded_mask, [1, tf.shape(model_out)[1], 1])
+        #reduced_mask = tf.reduce_any(tf.not_equal(tiled_mask, 0.0), axis=2)
+        #tiled_mask = tf.transpose(tiled_mask, perm=[0, 2, 1])
+        #broadcasted_mask = tf.broadcast_to(action_type_mask, tf.shape(model_out))
+        #masked_logits = model_out - (1 - tiled_mask) * 1e9
+        #return tf.nn.softmax(masked_logits), state
 
     def value_function(self):
         return tf.reshape(self._value_out, [-1])
