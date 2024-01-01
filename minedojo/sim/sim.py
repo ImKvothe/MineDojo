@@ -509,8 +509,11 @@ class MineDojoSim(gym.Env):
         actions_xml = []
         self._prev_action = []
         items = list(action.items())
-        if len(items) > 2 and (items[2][0]) == "chat":  ## IF ACTION IS A CHAT ACTION ADD TO FIRST AGENT ACTIONS
-            items[0][1]['chat'] = items[2][1]
+        if len(items) > 2 and items[2][0] == "chat":  ## IF ACTION IS A CHAT ACTION ADD TO FIRST AGENT ACTIONS (agent 1 or 2)
+            if items[2][1] == "/kill2" or items[2][1] == "/clear2" or items[2][1] == "/tp2" or items[2][1] == "/spreadplayers2":
+                items[1][1]['chat'] = items[2][1]
+            else:
+                items[0][1]['chat'] = items[2][1]
         while i < 2:
             action_i = items[i][1]
             prev_action = deepcopy(action_i)
