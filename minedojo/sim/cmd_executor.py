@@ -14,17 +14,22 @@ from .inventory import (
 
 
 class CMDExecutor:
-    logger = logging.getLogger("cmd_executor")
+    logger = logging.getLogger("cmd_executor") # agent 1 or 2
     valid_cmds = {
         "summon",
         "kill",
+        "kill2",
         "time",
         "weather",
         "replaceitem",
+        "replaceitem2",
         "tp",
+        "tp2",
         "clear",
+        "clear2",
         "setblock",
         "spreadplayers",
+        "spreadplayers2",
     }
 
     def __init__(self, world, raise_error_on_invalid_cmds: bool = False):
@@ -119,6 +124,10 @@ class CMDExecutor:
         obs, _, _, info = self.execute_cmd("/clear", action)
         return obs, 0, self._world.is_terminated, info
 
+    def clear_inventory2(self, action: Optional[dict] = None):
+        obs, _, _, info = self.execute_cmd("/clear2", action)
+        return obs, 0, self._world.is_terminated, info
+
     def set_inventory(
         self, inventory_list: List[InventoryItem], action: Optional[dict] = None
     ):
@@ -134,9 +143,17 @@ class CMDExecutor:
     def teleport_agent(self, x, y, z, yaw, pitch, action: Optional[dict] = None):
         obs, _, _, info = self.execute_cmd(f"/tp {x} {y} {z} {yaw} {pitch}", action)
         return obs, 0, self._world.is_terminated, info
+        
+    def teleport_agent2(self, x, y, z, yaw, pitch, action: Optional[dict] = None):
+        obs, _, _, info = self.execute_cmd(f"/tp2 {x} {y} {z} {yaw} {pitch}", action)
+        return obs, 0, self._world.is_terminated, info
 
     def kill_agent(self, action: Optional[dict] = None):
         obs, _, _, info = self.execute_cmd("/kill", action)
+        return obs, 0, self._world.is_terminated, info
+
+    def kill_agent2(self, action: Optional[dict] = None):
+        obs, _, _, info = self.execute_cmd("/kill2", action)
         return obs, 0, self._world.is_terminated, info
 
     def set_time(self, time: int, action: Optional[dict] = None):
@@ -150,5 +167,11 @@ class CMDExecutor:
     def random_teleport(self, max_range: int, action: Optional[dict] = None):
         obs, _, _, info = self.execute_cmd(
             f"/spreadplayers ~ ~ 0 {max_range} false @p", action
+        )
+        return obs, 0, self._world.is_terminated, info
+
+    def random_teleport2(self, max_range: int, action: Optional[dict] = None):
+        obs, _, _, info = self.execute_cmd(
+            f"/spreadplayers2 ~ ~ 0 {max_range} false @p", action
         )
         return obs, 0, self._world.is_terminated, info
