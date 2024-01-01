@@ -57,6 +57,7 @@ class MineDojoMultiAgent(MultiAgentEnv):
         base_env,
         height: int = 64,
         width: int = 64,
+        sticky_attack: Optional[int] = 30,
         pitch_limits: Tuple[int, int] = (-60, 60),
         seed: Optional[int] = None,
         **kwargs: Optional[Dict[Any, Any]],):
@@ -64,8 +65,14 @@ class MineDojoMultiAgent(MultiAgentEnv):
         self._height = height
         self._width = width
         self._pitch_limits = pitch_limits
+        self._sticky_attack = sticky_attack
+        self._sticky_attack_counter1 = 0
+        self._sticky_attack_counter2 = 0
+
         self._pos1 = kwargs.get("start_position1", None)
         self._pos2 = kwargs.get("start_position2", None)
+        self._start_pos1 = copy.deepcopy(self._pos1)
+        self._start_pos2 = copy.deepcopy(self._pos2)
 
         self.base_env = base_env
         self._episode_id = None
@@ -101,7 +108,7 @@ class MineDojoMultiAgent(MultiAgentEnv):
             },
             "location_stats1": copy.deepcopy(self._pos1),
             "biomeid1": float(obs[0]["location_stats"]["biome_id"].item()),
-                        "life_stats2": {
+            "life_stats2": {
                 "life": float(obs[1]["life_stats"]["life"].item()),
                 "oxygen": float(obs[1]["life_stats"]["oxygen"].item()),
                 "food": float(obs[1]["life_stats"]["food"].item()),
@@ -121,8 +128,8 @@ class MineDojoMultiAgent(MultiAgentEnv):
         iteration = iteration - 1
         if (iteration == 0):
           print(iteration)
-        action1 = self._convert_action(action_dict[self.curr_agents[0]])
-        action2 = self._convert_action(action_dict[self.curr_agents[1]])
+        action1 = self._convert_action(action_dict[self.curr_agents[0]], 1)
+        action2 = self._convert_action(action_dict[self.curr_agents[1]], 2)
         next_pitch1 = self._pos1["pitch"] + (action1[3] - 12) * 15
         next_pitch2 = self._pos2["pitch"] + (action2[3] - 12) * 15
 
@@ -135,7 +142,7 @@ class MineDojoMultiAgent(MultiAgentEnv):
         actions = [
             action1,
             action2,
-        ]
+         ]
         obs, reward, done, info = self.base_env.step(actions)
 
         self._pos1 = {
@@ -270,8 +277,26 @@ class MineDojoMultiAgent(MultiAgentEnv):
             "mask_craft_smelt": masks["craft_smelt"],
         }
 
-    def _convert_action(self, action: np.ndarray) -> np.ndarray:
+    def _convert_action(self, action: np.ndarray, agent_num) -> np.ndarray:
         converted_action = ACTION_MAP[int(action[0])].copy()
+        if self._sticky_attack:
+            if agent_num == 1:
+                if converted_action[5] == 3:
+                    self._sticky_attack_counter1 = self._sticky_attack - 1
+                if self._sticky_attack_counter1 > 0 and converted_action[5] == 0:
+                    converted_action[5] = 3
+                    self._sticky_attack_counter1 -= 1
+                elif converted_action[5] != 3:
+                    self._sticky_attack_counter1 = 0 
+            else:
+                if self._sticky_attack:
+                    if converted_action[5] == 3:
+                        self._sticky_attack_counter2 = self._sticky_attack - 1
+                    if self._sticky_attack_counter2 > 0 and converted_action[5] == 0:
+                        converted_action[5] = 3
+                        self._sticky_attack_counter2 -= 1
+                    elif converted_action[5] != 3:
+                        self._sticky_attack_counter2 = 0 
         # if the agent selects the craft action (value 4 in index 5 of the converted actions),
         # then it also selects the element to craft
         converted_action[6] = int(action[1]) if converted_action[5] == 4 else 0
@@ -382,4 +407,3 @@ def gen_trainer_from_params(params):
         config = config.multi_agent(policies = multi_agent_config["policies"], policy_mapping_fn = multi_agent_config["policy_mapping_fn"], policies_to_train =  multi_agent_config["policies_to_train"] )
         algo = config.build(env="MineDojo_Env")
         return algo
-
