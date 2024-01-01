@@ -48,11 +48,14 @@ class FastResetWrapper(gym.Wrapper):
             random_teleport_range = 200
         assert random_teleport_range >= 0
         self._reset_cmds = [
-            "/kill",
+            "/kill", "/kill2"
         ]
         if random_teleport_range > 0:
             self._reset_cmds.append(
                 f"/spreadplayers ~ ~ 0 {random_teleport_range} false @p"
+            )
+            self._reset_cmds.append(
+                f"/spreadplayers2 ~ ~ 0 {random_teleport_range} false @p"
             )
         self._reset_cmds.extend(
             [f"/time set {start_time or 0}", f'/weather {start_weather or "normal"}']
@@ -71,14 +74,15 @@ class FastResetWrapper(gym.Wrapper):
             for inventory_item in initial_inventory2:
                 slot, item_dict = parse_inventory_item(inventory_item)
                 self._reset_cmds.append(
-                    f'/replaceitem entity @p {map_slot_number_to_cmd_slot(slot)} minecraft:{item_dict["type"]} {item_dict["quantity"]} {item_dict["metadata"]}'
+                    f'/replaceitem2 entity @p {map_slot_number_to_cmd_slot(slot)} minecraft:{item_dict["type"]} {item_dict["quantity"]} {item_dict["metadata"]}'
                 )
         if start_position2 is not None:
             self._reset_cmds.append(
-                f'/tp {start_position2["x"]} {start_position2["y"]} {start_position2["z"]} {start_position2["yaw"]} {start_position2["pitch"]}'
+                f'/tp2 {start_position2["x"]} {start_position2["y"]} {start_position2["z"]} {start_position2["yaw"]} {start_position2["pitch"]}'
             )
         if clear_ground:
             self._reset_cmds.append("/kill @e[type=item]")
+            self._reset_cmds.append("/kill2 @e[type=item]")
 
         self._server_start = False
         self._info_prev_reset = None
