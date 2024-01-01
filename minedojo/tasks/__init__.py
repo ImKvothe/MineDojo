@@ -485,8 +485,11 @@ def _specific_task_make(task_id: str, *args, **kwargs):
         kwargs["initial_inventory"] = _parse_inventory_dict(
             task_specs["initial_inventory"]
         )
+        kwargs["initial_inventory2"] = _parse_inventory_dict(  # So you don't need to modify each task and add agent 2 inventory, if needed delete this.
+            task_specs["initial_inventory"]
+        )
         task_specs.pop("initial_inventory")
-    if "initial_inventory2" in task_specs:
+    if "initial_inventory2" in task_specs:  # Right now no task has this
         kwargs["initial_inventory2"] = _parse_inventory_dict(
             task_specs["initial_inventory2"]
         )
