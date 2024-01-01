@@ -139,6 +139,18 @@ class CMDExecutor:
                 action,
             )
         return obs, 0, self._world.is_terminated, info
+        
+    def set_inventory2(
+        self, inventory_list: List[InventoryItem], action: Optional[dict] = None
+    ):
+        obs, info = self._world.prev_obs, self._world.prev_info
+        for inventory_item in inventory_list:
+            slot, item_dict = parse_inventory_item(inventory_item)
+            obs, _, _, info = self.execute_cmd(
+                f'/replaceitem2 entity @p {map_slot_number_to_cmd_slot(slot)} minecraft:{item_dict["type"]} {item_dict["quantity"]} {item_dict["metadata"]}',
+                action,
+            )
+        return obs, 0, self._world.is_terminated, info
 
     def teleport_agent(self, x, y, z, yaw, pitch, action: Optional[dict] = None):
         obs, _, _, info = self.execute_cmd(f"/tp {x} {y} {z} {yaw} {pitch}", action)
