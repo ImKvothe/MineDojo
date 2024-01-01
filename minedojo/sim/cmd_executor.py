@@ -43,7 +43,7 @@ class CMDExecutor:
     def execute_cmd(self, cmd: str, action: Optional[dict] = None):
         if (not cmd.startswith("/")) or (cmd.split()[0][1:] not in self.valid_cmds):
             if not self._raise_error_on_invalid_cmds:
-                self.logger.warning(f"Invalid cmd {cmd}, skipping...")
+                #self.logger.warning(f"Invalid cmd {cmd}, skipping...")
                 if action is None:
                     return (
                         self._world.prev_obs,

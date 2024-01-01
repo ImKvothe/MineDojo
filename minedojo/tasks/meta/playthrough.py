@@ -122,10 +122,13 @@ class Playthrough(MetaTaskBase):
         lidar_rays: Optional[List[Tuple[float, float, float]]] = None,
         # ------ event-level action or keyboard-mouse level action ------
         event_level_control: bool = True,
+        training: Optional[bool] = None,
         # ------ misc ------
         break_speed_multiplier: float = 1.0,
         sim_name: str = "Playthrough",
     ):
+        if (training is None):
+            training = False
         success_criteria = [simple_inventory_based_check(name="dragon_egg", quantity=1)]
         reward_fns = [
             possess_item_reward(
@@ -165,6 +168,7 @@ class Playthrough(MetaTaskBase):
             start_food=start_food,
             start_health2=start_health2,
             start_food2=start_food2,
+            training=training,
         )
 
         self.time_limit = TIME_LIMIT

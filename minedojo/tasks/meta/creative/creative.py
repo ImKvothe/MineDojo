@@ -105,10 +105,13 @@ class CreativeMeta(MetaTaskBase):
         lidar_rays: Optional[List[Tuple[float, float, float]]] = None,
         # ------ event-level action or keyboard-mouse level action ------
         event_level_control: bool = True,
+        training: Optional[bool] = None,
         # ------ misc ------
         break_speed_multiplier: float = 1.0,
         sim_name: str = "CreativeMeta",
     ):
+        if (training is None):
+            training = False
         super().__init__(
             fast_reset=fast_reset,
             success_criteria=None,
@@ -132,6 +135,7 @@ class CreativeMeta(MetaTaskBase):
             start_food=start_food,
             start_health2=start_health2,
             start_food2=start_food2,
+            training=training,
         )
 
     def _compute_reward_hook(

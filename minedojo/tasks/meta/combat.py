@@ -169,9 +169,12 @@ class CombatMeta(ExtraSpawnMetaTaskBase):
         lidar_rays: Optional[List[Tuple[float, float, float]]] = None,
         # ------ event-level action or keyboard-mouse level action ------
         event_level_control: bool = True,
+        training: Optional[bool] = None,
         # ------ misc ------
         sim_name: str = "CombatMeta",
     ):
+        if (training is None):
+            training = False
         if isinstance(target_names, str):
             target_names = [target_names]
         if isinstance(target_quantities, int):
@@ -261,6 +264,7 @@ class CombatMeta(ExtraSpawnMetaTaskBase):
             allow_mob_spawn=allow_mob_spawn,
             generate_world_type=generate_world_type,
             specified_biome=specified_biome,
+            training=training,
         )
 
     @property

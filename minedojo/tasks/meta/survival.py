@@ -118,11 +118,14 @@ class SurvivalMeta(MetaTaskBase):
         voxel_size: Optional[Dict[str, int]] = None,
         use_lidar: bool = False,
         lidar_rays: Optional[List[Tuple[float, float, float]]] = None,
+        training: Optional[bool] = None,
         # ------ event-level action or keyboard-mouse level action ------
         event_level_control: bool = True,
         # ------ misc ------
         sim_name: str = "SurvivalMeta",
     ):
+        if (training is None):
+            training = False
         assert (
             target_days > 1
         ), f"expect target_days > 1 for non-trivial survival task, got {target_days}"
@@ -158,6 +161,7 @@ class SurvivalMeta(MetaTaskBase):
             start_food=start_food,
             start_health2=start_health2,
             start_food2=start_food2,
+            training=training,
         )
 
     @property

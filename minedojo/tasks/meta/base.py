@@ -56,13 +56,16 @@ class MetaTaskBase(gym.Wrapper):
         fast_reset_random_teleport_range: Optional[int] = None,
         success_criteria: List[check_success_base],
         reward_fns: List[reward_fn_base],
+        training: Optional[bool] = None,
         **kwargs,
     ):
+        if (training is None):
+            training = False
         sim = MineDojoSim(**kwargs)
         self._fast_reset = fast_reset
         if fast_reset:
             sim = FastResetWrapper(
-                sim, random_teleport_range=fast_reset_random_teleport_range
+                sim, random_teleport_range=fast_reset_random_teleport_range, training = training
             )
         super().__init__(env=sim)
 
@@ -244,11 +247,14 @@ class ExtraSpawnMetaTaskBase(MetaTaskBase):
         fast_reset_random_teleport_range: Optional[int] = None,
         success_criteria: List[check_success_base],
         reward_fns: List[reward_fn_base],
+        training: Optional[bool] = None,
         **kwargs,
     ):
         """
         base task class for meta tasks that require extra spawn, e.g., harvest, combat, and techtree
         """
+        self.training = training
+        self._reset_counter = -1
         self._extra_spawn_rate = None
         if extra_spawn_rate is not None:
             assert all(
@@ -299,12 +305,12 @@ class ExtraSpawnMetaTaskBase(MetaTaskBase):
                 low=low, high=high, seed=kwargs["seed"]
             )
             self._rng = np.random.default_rng(seed=kwargs["seed"])
-
         super().__init__(
             fast_reset=fast_reset,
             fast_reset_random_teleport_range=fast_reset_random_teleport_range,
             success_criteria=success_criteria,
             reward_fns=reward_fns,
+            training = training,
             **kwargs,
         )
 
@@ -352,14 +358,17 @@ class ExtraSpawnMetaTaskBase(MetaTaskBase):
         self, reset_obs: Dict[str, Any], reset_info: Dict[str, Any]
     ) -> (Dict[str, Any], Dict[str, Any]):
         obs, info = reset_obs, reset_info
-        if len(self._initial_mobs) > 0:
+        if len(self._initial_mobs) > 0 and self._reset_counter <= -1:
             mobs_rel_positions = self._mob_spawn_range_space.sample()
             obs, _, _, info = self.env.spawn_mobs(
                 self._initial_mobs, mobs_rel_positions
             )
+            if self.training:
+                self._reset_counter = 3
         if not isinstance(obs, list):
             obs = [obs, obs]
         if not isinstance(info, list):
             info = [info, info]
         print("hookreset")
+        self._reset_counter = self._reset_counter - 1
         return obs, info

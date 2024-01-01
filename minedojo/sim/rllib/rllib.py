@@ -126,8 +126,6 @@ class MineDojoMultiAgent(MultiAgentEnv):
     def step(self, action_dict):
         global iteration
         iteration = iteration - 1
-        if (iteration == 0):
-          print(iteration)
         action1 = self._convert_action(action_dict[self.curr_agents[0]], 1)
         action2 = self._convert_action(action_dict[self.curr_agents[1]], 2)
         next_pitch1 = self._pos1["pitch"] + (action1[3] - 12) * 15
@@ -164,8 +162,8 @@ class MineDojoMultiAgent(MultiAgentEnv):
         obs0 = OrderedDict(sorted(self._convert_obs(obs[0]).items()))
         obs1 = OrderedDict(sorted(self._convert_obs(obs[1]).items()))
         obs = {self.curr_agents[0]: obs0, self.curr_agents[1]: obs1}
-        if (iteration == 0):
-          done = True
+        #if (iteration == 0):
+        #  done = True
         rewards = {self.curr_agents[0]: reward[0], self.curr_agents[1]: reward[1]}
         dones = {self.curr_agents[0]: done, self.curr_agents[1]: done}  ## Cambiar done para cada agente
         terminated = dones
@@ -215,7 +213,8 @@ class MineDojoMultiAgent(MultiAgentEnv):
 
     @classmethod
     def from_config(cls):
-      base_env = minedojo.make(task_id="harvest_milk", image_size=(288,512))
+      #base_env = minedojo.make(task_id="harvest_milk", image_size=(288,512), training = True)
+      base_env = minedojo.make(task_id="combat_spider_plains_leather_armors_diamond_sword_shield", image_size=(288,512), training = True)
       return cls(base_env)
 
     def _convert_inventory(self, inventory: Dict[str, Any]) -> np.ndarray:

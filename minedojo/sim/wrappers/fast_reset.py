@@ -25,7 +25,12 @@ class FastResetWrapper(gym.Wrapper):
         env: MineDojoSim,
         random_teleport_range: int | None = 200,
         clear_ground: bool = True,
+        training: bool = False,
     ):
+        if (training):
+            self._reset_counter = 2
+        else: 
+            self._reset_counter = -1
         super().__init__(env=env)
         start_time, start_weather = env.start_time, env.initial_weather
         initial_inventory, start_position = env.initial_inventory, env.start_position
@@ -92,8 +97,12 @@ class FastResetWrapper(gym.Wrapper):
             self._server_start = True
             return self.env.reset()
         else:
-            for cmd in self._reset_cmds:
-                obs, _, _, info = self.env.execute_cmd(cmd)
+            if self._reset_counter <= -1:
+                for cmd in self._reset_cmds:
+                    obs, _, _, info = self.env.execute_cmd(cmd)
+            else:
+                obs, _, _, info = self.env.execute_cmd("")
+            self._reset_counter = self._reset_counter - 1
             self._info_prev_reset = self.env.prev_info
             return obs
 

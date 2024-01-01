@@ -157,9 +157,12 @@ class HarvestMeta(ExtraSpawnMetaTaskBase):
         lidar_rays: Optional[List[Tuple[float, float, float]]] = None,
         # ------ event-level action or keyboard-mouse level action ------
         event_level_control: bool = True,
+        training: Optional[bool] = None,
         # ------ misc ------
         sim_name: str = "HarvestMeta",
     ):
+        if (training is None):
+            training = False
         if isinstance(target_names, str):
             target_names = [target_names]
         if isinstance(target_quantities, int):
@@ -244,6 +247,7 @@ class HarvestMeta(ExtraSpawnMetaTaskBase):
             start_food2=start_food2,
             generate_world_type=generate_world_type,
             specified_biome=specified_biome,
+            training = training,
         )
 
     @property

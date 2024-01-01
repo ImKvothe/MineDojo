@@ -163,6 +163,7 @@ class MineDojoSim(gym.Env):
         sim_name: str = "MineDojoSim",
         raise_error_on_invalid_cmds: bool = False,
     ):
+        self.iteration = 0
         self._sim_name = sim_name
         self._rng = np.random.default_rng(seed)
         if isinstance(image_size, int):
@@ -454,7 +455,7 @@ class MineDojoSim(gym.Env):
             Agent’s initial observation.
         """
         episode_id = str(uuid.uuid4())
-
+        self.iteration = 0
         xml = etree.fromstring(self._sim_spec.to_xml(episode_id))
         agent_xmls = []
         for role in range(self._sim_spec._agent_count):
@@ -509,11 +510,14 @@ class MineDojoSim(gym.Env):
         actions_xml = []
         self._prev_action = []
         items = list(action.items())
-        if len(items) > 2 and items[2][0] == "chat":  ## IF ACTION IS A CHAT ACTION ADD TO FIRST AGENT ACTIONS (agent 1 or 2)
-            if items[2][1] == "/kill2" or items[2][1] == "/clear2" or items[2][1] == "/tp2" or items[2][1] == "/spreadplayers2":
-                items[1][1]['chat'] = items[2][1]
-            else:
-                items[0][1]['chat'] = items[2][1]
+        if (self.iteration < 3):
+            if len(items) > 2 and items[2][0] == "chat":  ## IF ACTION IS A CHAT ACTION ADD TO FIRST AGENT ACTIONS (agent 1 or 2)
+                if items[2][1] == "/kill2" or items[2][1] == "/clear2" or items[2][1] == "/tp2" or items[2][1] == "/spreadplayers2":
+                    items[1][1]['chat'] = items[2][1]
+                else:
+                    items[0][1]['chat'] = items[2][1]
+                #print(items[2][1])
+        self.iteration = self.iteration + 1
         while i < 2:
             action_i = items[i][1]
             prev_action = deepcopy(action_i)

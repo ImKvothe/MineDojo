@@ -73,6 +73,7 @@ class NNActionSpaceWrapper(gym.Wrapper):
         destroy_item = (False, None)
         noop = self.env.action_space.no_op()
         items = list(noop.items())
+        skiped_action = [False, False]
         i = 0
         while i < len(items):
             # ------ parse main actions ------
@@ -118,6 +119,7 @@ class NNActionSpaceWrapper(gym.Wrapper):
                 elif item_to_craft in MC.ALL_SMELT_ITEMS_NN_ACTIONS:
                     list(noop.items())[i][1]["smelt"] = item_to_craft
                 elif self._strict_check:
+                    skiped_action[i] = True
                     pass
                     #raise ValueError(f"Unknown item {item_to_craft} to craft/smelt!")
             elif fn_action == 5:
@@ -125,6 +127,7 @@ class NNActionSpaceWrapper(gym.Wrapper):
                 item_id = self._inventory_names[i][actions[i][7]].replace(" ", "_")
                 if item_id == "air":
                     if self._strict_check:
+                        skiped_action[i] = True
                         pass
                         #raise ValueError(
                         #    "Trying to equip air, raise error with strict check."
@@ -137,6 +140,7 @@ class NNActionSpaceWrapper(gym.Wrapper):
                 item_id = self._inventory_names[i][actions[i][7]].replace(" ", "_")
                 if item_id == "air":
                     if self._strict_check:
+                        skiped_action[i] = True
                         pass
                         #raise ValueError(
                         #    "Trying to equip air, raise error with strict check."
@@ -149,18 +153,22 @@ class NNActionSpaceWrapper(gym.Wrapper):
                 item_id = self._inventory_names[i][actions[i][7]].replace(" ", "_")
                 if item_id == "air":
                     if self._strict_check:
+                        skiped_action[i] = True
                         pass
                         #raise ValueError(
                         #    "Trying to destroy air, raise error with strict check."
                         #    "You shouldn't execute this action, maybe something wrong with the mask!"
                         #)
                 else:
-                    print(actions[i][7])
                     destroy_item = (True, actions[i][7])
             else:
                 return noop
                 #raise ValueError(f"Unknown value {fn_action} for function action")
             i = i + 1
+        if skiped_action[0] == True:
+            list(noop.items())[0][1]["attack"] = 1
+        if skiped_action[1] == True:
+            list(noop.items())[1][1]["attack"] = 1   
         return noop, destroy_item
 
     def reverse_action(self, actions):
