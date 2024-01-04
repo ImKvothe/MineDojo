@@ -190,6 +190,7 @@ class MineDojoMultiAgent(MultiAgentEnv):
                 "inventory_delta": gym.spaces.Box(-np.inf, np.inf, (N_ALL_ITEMS,), np.float64),
                 "equipment": gym.spaces.Box(0.0, 1.0, (N_ALL_ITEMS,), np.int32),
                 "life_stats": gym.spaces.Box(-20.0, np.array([20.0, 20.0, 300.0]), (3,), np.float32),
+                "damage_received": gym.spaces.Box(0, 40.0, (1,), np.float32),
                 "mask_action_type": gym.spaces.Box(0, 1, (len(ACTION_MAP),), bool),
                 "mask_equip_place": gym.spaces.Box(0, 1, (N_ALL_ITEMS,), bool),
                 "mask_destroy": gym.spaces.Box(0, 1, (N_ALL_ITEMS,), bool),
@@ -214,7 +215,8 @@ class MineDojoMultiAgent(MultiAgentEnv):
     @classmethod
     def from_config(cls):
       #base_env = minedojo.make(task_id="harvest_milk", image_size=(288,512), training = True)
-      base_env = minedojo.make(task_id="combat_spider_plains_leather_armors_diamond_sword_shield", image_size=(288,512), training = True)
+      #base_env = minedojo.make(task_id="combat_spider_plains_leather_armors_diamond_sword_shield", image_size=(288,512), training = True)
+      base_env = minedojo.make(task_id="harvest_wool_with_shears_and_sheep", image_size=(288,512), training = True)
       return cls(base_env)
 
     def _convert_inventory(self, inventory: Dict[str, Any]) -> np.ndarray:
@@ -320,6 +322,7 @@ class MineDojoMultiAgent(MultiAgentEnv):
             "life_stats": np.concatenate(
                 (obs["life_stats"]["life"], obs["life_stats"]["food"], obs["life_stats"]["oxygen"])
             ),
+            "damage_received": obs["damage_source"]["damage_amount"].copy(),
             **self._convert_masks(obs["masks"]),
         }
 

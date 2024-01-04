@@ -60,6 +60,10 @@ class RllibPPOModel(TFModelV2):
             shape = (3,), name = "life_stats"
         )
 
+        #self.damage_received = tf.keras.Input(
+        #    shape = (1,), name = "damage_received"
+        #)
+
         #self.mask_action_type = tf.keras.Input(
         #    shape = (19,), name = "mask_action_type"
         #)
@@ -76,7 +80,7 @@ class RllibPPOModel(TFModelV2):
         #    shape = (N_ALL_ITEMS,), name = "mask_equip_place"
         #)
 
-        combined_inputs = tf.keras.layers.Concatenate()([self.equipment, self.inventory, self.inventory_delta, self.inventory_max, self.life_stats])
+        combined_inputs = tf.keras.layers.Concatenate()([self.equipment, self.inventory, self.inventory_delta, self.inventory_max, self.life_stats,])
 
         self.combined_inputs = combined_inputs
         out1 = self.rgb

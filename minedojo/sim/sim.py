@@ -516,7 +516,7 @@ class MineDojoSim(gym.Env):
                     items[1][1]['chat'] = items[2][1]
                 else:
                     items[0][1]['chat'] = items[2][1]
-                #print(items[2][1])
+                print(items[2][1])
         self.iteration = self.iteration + 1
         while i < 2:
             action_i = items[i][1]
