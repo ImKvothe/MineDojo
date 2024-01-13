@@ -28,7 +28,7 @@ class FastResetWrapper(gym.Wrapper):
         training: bool = False,
     ):
         if (training):
-            self._reset_counter = 2
+            self._reset_counter = 1
         else: 
             self._reset_counter = -1
         super().__init__(env=env)
@@ -97,6 +97,8 @@ class FastResetWrapper(gym.Wrapper):
             self._server_start = True
             return self.env.reset()
         else:
+            print("fast_reset")
+            print(self._reset_counter)
             if self._reset_counter <= -1:
                 for cmd in self._reset_cmds:
                     obs, _, _, info = self.env.execute_cmd(cmd)

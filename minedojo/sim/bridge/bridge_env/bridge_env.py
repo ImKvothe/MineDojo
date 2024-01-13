@@ -71,7 +71,7 @@ class BridgeEnv:
         # Start missing instances, quit episodes, and make socket connections
         self._setup_instances()
         self._terminated = False
-
+        print("resetting")
         # Start the Mission/Task by sending the master mission XML over
         # the pipe to these instances, and  update the agent xmls to get
         # the port/ip of the master agent send the remaining XMLS.
@@ -138,6 +138,8 @@ class BridgeEnv:
             assert self.STEP_OPTIONS in {0, 2}
             all_obs = {}
             any_done = False
+            if self._terminated == True:
+                print("aterminated")
             for i, instance in enumerate(self._instances):
                 try:
                     malmo_command = action_xmls[i]
@@ -148,6 +150,11 @@ class BridgeEnv:
                     obs = instance.client_socket_recv_message()
                     # Receive reward (useless though), done, and sent.
                     reply = instance.client_socket_recv_message()
+                    if obs is None or reply is None:
+                        print("obs/reply = None")
+                        print(obs)
+                        print(reply)
+                        print(malmo_command)
                     _, done, sent = struct.unpack("!dbb", reply)
                     any_done = any_done or (done == 1)
                     # Receive info from the environment.
@@ -158,9 +165,11 @@ class BridgeEnv:
                 except (socket.timeout, socket.error, TypeError) as e:
                     # when the socket times out...
                     self._terminated = True
-                    logger.error(f"Failed to take a step. Error msg: {e}")
+                    print(f"Failed to take a step. Error msg: {e}")
                     return StepTuple(step_success=False, raw_obs=None)
             self._terminated = any_done
+            if self._terminated == True:
+                print("terminated")
 
             # step the server
             # instance[0] is the server
@@ -172,7 +181,7 @@ class BridgeEnv:
                 self._terminated = True
                 logger.error("Failed to take a step (timeout or error).")
         else:
-            raise RuntimeError("Attempted to step an environment server with done=True")
+            return StepTuple(step_success=True, raw_obs=None)
         return StepTuple(step_success=True, raw_obs=all_obs)
 
     def close(self):

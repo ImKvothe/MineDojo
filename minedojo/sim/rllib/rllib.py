@@ -3,6 +3,9 @@ import minedojo
 import logging
 from ray.tune.result import DEFAULT_RESULTS_DIR
 import ray
+import os
+import dill
+import random
 from datetime import datetime
 timestr = datetime.today().strftime("%Y-%m-%d_%H-%M-%S")
 from ray.tune.registry import register_env
@@ -24,7 +27,7 @@ from ray.rllib.models import ModelCatalog
 LOCAL_TESTING = True
 act_space = None
 obs_space = None
-iteration = 200
+iteration = 0
 
 N_ALL_ITEMS = len(ALL_ITEMS)
 ACTION_MAP = {
@@ -40,9 +43,9 @@ ACTION_MAP = {
     9: np.array([0, 0, 0, 13, 12, 0, 0, 0]),  # pitch up (+15)
     10: np.array([0, 0, 0, 12, 11, 0, 0, 0]),  # yaw down (-15)
     11: np.array([0, 0, 0, 12, 13, 0, 0, 0]),  # yaw up (+15)
-    12: np.array([0, 0, 0, 12, 12, 1, 0, 0]),  # use
-    13: np.array([0, 0, 0, 12, 12, 2, 0, 0]),  # drop
-    14: np.array([0, 0, 0, 12, 12, 3, 0, 0]),  # attack
+    12: np.array([0, 0, 0, 12, 12, 3, 0, 0]),  # attack
+    13: np.array([0, 0, 0, 12, 12, 1, 0, 0]),  # use
+    14: np.array([0, 0, 0, 12, 12, 2, 0, 0]),  # drop
     15: np.array([0, 0, 0, 12, 12, 4, 0, 0]),  # craft
     16: np.array([0, 0, 0, 12, 12, 5, 0, 0]),  # equip
     17: np.array([0, 0, 0, 12, 12, 6, 0, 0]),  # place
@@ -81,6 +84,9 @@ class MineDojoMultiAgent(MultiAgentEnv):
         self._agent_ids = set(self.reset()[0].keys())
 
     def reset(self, *, seed=None, options=None):
+        global iteration
+        iteration = 0
+        print("reset")
         obs = self.base_env.reset()
         self._pos1 = {
             "x": float(obs[0]["location_stats"]["pos"][0]),
@@ -125,17 +131,27 @@ class MineDojoMultiAgent(MultiAgentEnv):
 
     def step(self, action_dict):
         global iteration
-        iteration = iteration - 1
-        action1 = self._convert_action(action_dict[self.curr_agents[0]], 1)
-        action2 = self._convert_action(action_dict[self.curr_agents[1]], 2)
-        next_pitch1 = self._pos1["pitch"] + (action1[3] - 12) * 15
-        next_pitch2 = self._pos2["pitch"] + (action2[3] - 12) * 15
+        iteration = iteration + 1
+        if "ppo_0" not in action_dict: #Debugging purposes
+            print("action_dict")
+            print(action_dict)
+            raise Exception
+            self.base_env.reset()
+            action1 = self.base_env.action_space.no_op()
+            action2 = self.base_env.action_space.no_op()
+            action1[0] = 1
+            action2[0] = 1
+        else: 
+            action1 = self._convert_action(action_dict[self.curr_agents[0]], 1)
+            action2 = self._convert_action(action_dict[self.curr_agents[1]], 2)
+            next_pitch1 = self._pos1["pitch"] + (action1[3] - 12) * 15
+            next_pitch2 = self._pos2["pitch"] + (action2[3] - 12) * 15
 
-        if not (self._pitch_limits[0] <= next_pitch1 <= self._pitch_limits[1]):
-            action1[3] = 12
-
-        if not (self._pitch_limits[0] <= next_pitch2 <= self._pitch_limits[1]):
-            action2[3] = 12
+            if not (self._pitch_limits[0] <= next_pitch1 <= self._pitch_limits[1]):
+                action1[3] = 12
+    
+            if not (self._pitch_limits[0] <= next_pitch2 <= self._pitch_limits[1]):
+                action2[3] = 12
 
         actions = [
             action1,
@@ -165,9 +181,12 @@ class MineDojoMultiAgent(MultiAgentEnv):
         #if (iteration == 0):
         #  done = True
         rewards = {self.curr_agents[0]: reward[0], self.curr_agents[1]: reward[1]}
-        dones = {self.curr_agents[0]: done, self.curr_agents[1]: done}  ## Cambiar done para cada agente
-        terminated = dones
-        terminated["__all__"] = done
+        dones = {self.curr_agents[0]: done, self.curr_agents[1]: done, "__all__": done}  ## Cambiar done para cada agente
+        terminated = {self.curr_agents[0]: False, self.curr_agents[1]: False}
+        terminated["__all__"] = False
+        if (done == True):
+            print("done in multiagent")
+            print(iteration)
         infos = {self.curr_agents[0]: info[0], self.curr_agents[1]: info[1]}
 
         return obs, rewards, dones, terminated, infos
@@ -217,6 +236,7 @@ class MineDojoMultiAgent(MultiAgentEnv):
       #base_env = minedojo.make(task_id="harvest_milk", image_size=(288,512), training = True)
       #base_env = minedojo.make(task_id="combat_spider_plains_leather_armors_diamond_sword_shield", image_size=(288,512), training = True)
       base_env = minedojo.make(task_id="harvest_wool_with_shears_and_sheep", image_size=(288,512), training = True)
+      #base_env = minedojo.make(task_id="harvest_log_with_diamond_axe", image_size=(288,512), training = True)
       return cls(base_env)
 
     def _convert_inventory(self, inventory: Dict[str, Any]) -> np.ndarray:
@@ -279,25 +299,27 @@ class MineDojoMultiAgent(MultiAgentEnv):
         }
 
     def _convert_action(self, action: np.ndarray, agent_num) -> np.ndarray:
-        converted_action = ACTION_MAP[int(action[0])].copy()
+        action_int = int(action[0])
+        if action_int > 12:
+            action_int = random.randint(0,12)
+        converted_action = ACTION_MAP[action_int].copy()
         if self._sticky_attack:
             if agent_num == 1:
                 if converted_action[5] == 3:
                     self._sticky_attack_counter1 = self._sticky_attack - 1
-                if self._sticky_attack_counter1 > 0 and converted_action[5] == 0:
+                if self._sticky_attack_counter1 > 0:
                     converted_action[5] = 3
                     self._sticky_attack_counter1 -= 1
-                elif converted_action[5] != 3:
-                    self._sticky_attack_counter1 = 0 
+                #elif converted_action[5] != 3:
+                #    self._sticky_attack_counter1 = 0 
             else:
-                if self._sticky_attack:
-                    if converted_action[5] == 3:
-                        self._sticky_attack_counter2 = self._sticky_attack - 1
-                    if self._sticky_attack_counter2 > 0 and converted_action[5] == 0:
-                        converted_action[5] = 3
-                        self._sticky_attack_counter2 -= 1
-                    elif converted_action[5] != 3:
-                        self._sticky_attack_counter2 = 0 
+                if converted_action[5] == 3:
+                    self._sticky_attack_counter2 = self._sticky_attack - 1
+                if self._sticky_attack_counter2 > 0:
+                    converted_action[5] = 3
+                    self._sticky_attack_counter2 -= 1
+                #else:
+                #    self._sticky_attack_counter2 = 0 
         # if the agent selects the craft action (value 4 in index 5 of the converted actions),
         # then it also selects the element to craft
         converted_action[6] = int(action[1]) if converted_action[5] == 4 else 0
@@ -328,15 +350,16 @@ class MineDojoMultiAgent(MultiAgentEnv):
 
 def gen_trainer_from_params(params):
     if not ray.is_initialized():
+        _system_config = {"local_fs_capacity_threshold": 0.99}
         init_params = {
             "ignore_reinit_error": True,
-            "num_gpus": 2,
+            "num_gpus": 1,
             "_temp_dir": params["ray_params"]["temp_dir"],
             "log_to_driver": params["verbose"],
             "logging_level": logging.INFO
             if params["verbose"]
             else logging.CRITICAL,
-            "object_store_memory": 5*10**9,
+            "_system_config" : _system_config
         }
         context = ray.init(**init_params)
         register_env("MineDojo_Env", params["ray_params"]["env_creator"])
@@ -386,11 +409,9 @@ def gen_trainer_from_params(params):
         multi_agent_config["policies_to_train"] = {"ppo"}
 
         config = PPOConfig()
-        config = config.resources(num_gpus=0, num_cpus_per_worker = 2, num_gpus_per_worker = 0)
+        config = config.resources(num_gpus=0)
         config = config.rollouts(num_rollout_workers=1, rollout_fragment_length = training_params["rollout_fragment_length"])
-        config = config.framework(framework = "tf", tf_session_args = {"intra_op_parallelism_threads": 2,"inter_op_parallelism_threads": 2,
-                                  "gpu_options": {"allow_growth": True,},"log_device_placement": False,"device_count": {"CPU": 1, "GPU" : 2},
-                                  "allow_soft_placement": True,})
+        config = config.framework(framework = "tf")
         config = config.training(model = {"vf_share_layers" : training_params["vf_share_layers"]})
         config = config.training(lr_schedule=training_params["lr_schedule"],
                                  use_gae=True,
@@ -402,10 +423,56 @@ def gen_trainer_from_params(params):
                                  clip_param=training_params["clip_param"],
                                  grad_clip=training_params["grad_clip"],
                                  train_batch_size = training_params["train_batch_size"],
-                                 sgd_minibatch_size = 4,
+                                 sgd_minibatch_size = 12,
                                  entropy_coeff = 0.2,
                                  vf_share_layers = True
                                 )
         config = config.multi_agent(policies = multi_agent_config["policies"], policy_mapping_fn = multi_agent_config["policy_mapping_fn"], policies_to_train =  multi_agent_config["policies_to_train"] )
         algo = config.build(env="MineDojo_Env")
         return algo
+
+def save_trainer(trainer, params, path=None):
+    """
+    Saves a serialized trainer checkpoint at `path`. If none provided, the default path is
+    ~/ray_results/<experiment_results_dir>/checkpoint_<i>
+    """
+    # Save trainer
+    save_result = trainer.save(path)
+    path_to_checkpoint = save_result.checkpoint.path
+    print(path_to_checkpoint)
+
+    # Save params used to create trainer in /path/to/checkpoint_dir/config.pkl
+    config = copy.deepcopy(params)
+    config_path = os.path.join(os.path.dirname(path_to_checkpoint), "config.pkl")
+
+    # Note that we use dill (not pickle) here because it supports function serialization
+    with open(config_path, "wb") as f:
+        dill.dump(config, f)
+    return path_to_checkpoint 
+
+def load_trainer(save_path, true_num_workers=False):
+    """
+    Returns a ray compatible trainer object that was previously saved at `save_path` by a call to `save_trainer`
+    Note that `save_path` is the full path to the checkpoint directory
+    Additionally we decide if we want to use the same number of remote workers (see ray library Training APIs)
+    as we store in the previous configuration, by default = False, we use only the local worker
+    (see ray library API)
+    """
+    # Read in params used to create trainer
+    config_path = os.path.join(os.path.dirname(save_path), "config.pkl")
+    with open(config_path, "rb") as f:
+        # We use dill (instead of pickle) here because we must deserialize functions
+        config = dill.load(f)
+    if not true_num_workers:
+        # Override this param to lower overhead in trainer creation
+        config["training_params"]["num_workers"] = 0
+
+    if config["training_params"]["num_gpus"] == 1:
+        # all other configs for the server can be kept for local testing
+        config["training_params"]["num_gpus"] = 0
+
+    # Get un-trained trainer object with proper config
+    trainer = gen_trainer_from_params(config)
+    # Load weights into dummy object
+    trainer.restore(save_path)
+    return trainer

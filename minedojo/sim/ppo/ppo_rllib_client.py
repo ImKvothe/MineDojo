@@ -18,8 +18,8 @@ from ray.rllib.env.multi_agent_env import MultiAgentEnv
 from ray.rllib.algorithms.ppo import PPOConfig
 from minedojo.sim.ppo.ppo_rllib import RllibPPOModel
 from ray.rllib.models import ModelCatalog
-from minedojo.sim.rllib.rllib import gen_trainer_from_params
-LOCAL_TESTING = True
+from minedojo.sim.rllib.rllib import gen_trainer_from_params, save_trainer, load_trainer
+LOCAL_TESTING = False
 
 
 def _env_creator(env_config):
@@ -50,7 +50,7 @@ def my_config():
     D2RL = False
     ### Training Params ###
 
-    num_workers = 30 if not LOCAL_TESTING else 2
+    #num_workers = 10 if not LOCAL_TESTING else 2
 
     # list of all random seeds to use for experiments, used to reproduce results
     seeds = [0]
@@ -59,30 +59,37 @@ def my_config():
     seed = None
 
     # Number of gpus the central driver should use
-    num_gpus = 0 if LOCAL_TESTING else 1
+    num_gpus = 0 if not LOCAL_TESTING else 0
 
     # How many environment timesteps will be simulated (across all environments)
     # for one set of gradient updates. Is divided equally across environments
-    train_batch_size = 12000 if not LOCAL_TESTING else 200
-
+    train_batch_size = 3000 if not LOCAL_TESTING else 200
+    
     # size of minibatches we divide up each batch into before
     # performing gradient steps
-    sgd_minibatch_size = 2000 if not LOCAL_TESTING else 4
+    sgd_minibatch_size = 120 if not LOCAL_TESTING else 8
 
     # Rollout length
-    rollout_fragment_length = 100
+    rollout_fragment_length = 500 if not LOCAL_TESTING else 100
 
     # Whether all PPO agents should share the same policy network
     shared_policy = True
 
     # Number of training iterations to run
-    num_training_iters = 420 if not LOCAL_TESTING else 1
+    num_training_iters = 5 if not LOCAL_TESTING else 5
 
     # Stepsize of SGD.
     lr = 5e-5
+    
+    lr_start = 2.5e-4
+    lr_end = 5e-5
+    lr_time = 50 * 1000000
 
     # Learning rate schedule.
-    lr_schedule = None
+    lr_schedule = [
+            [0, lr_start],
+            [lr_time, lr_end],
+        ]
     # list of all random seeds to use for experiments, used to reproduce results
     seeds = [0]
     # If specified, clip the global norm of gradients by this amount
@@ -114,7 +121,7 @@ def my_config():
 
     # Number of SGD iterations in each outer loop (i.e., number of epochs to
     # execute per train batch).
-    num_sgd_iter = 8 if not LOCAL_TESTING else 1
+    num_sgd_iter = 2 if not LOCAL_TESTING else 2
 
     # How many trainind iterations (calls to trainer.train()) to run before saving model checkpoint
     save_freq = 25
@@ -175,7 +182,6 @@ def my_config():
 
     # to be passed into the rllib.PPOTrainer class
     training_params = {
-        "num_workers": num_workers,
         "train_batch_size": train_batch_size,
         "sgd_minibatch_size": sgd_minibatch_size,
         "rollout_fragment_length": rollout_fragment_length,
@@ -238,13 +244,21 @@ def my_config():
 
 def run(params):
     run_name = params["experiment_name"]
-    trainer = gen_trainer_from_params(params)
+    saved_path = params["resume_checkpoint_path"]
+    if saved_path:
+        trainer = load_trainer(save_path=saved_path, true_num_workers=False)
+    else:
+        trainer = gen_trainer_from_params(params)
     #os.system("pkill -9 -f java")
-    result = {}
+    result = []
     for i in range(params["num_training_iters"]):
         if params["verbose"]:
             print("Starting training iteration", i)
         result = trainer.train()
+        save_path = save_trainer(trainer, params)
+        if params["verbose"]:
+            print("save path:", save_path)
+            print(result)
     return result
 
 

@@ -535,13 +535,18 @@ class MineDojoSim(gym.Env):
             # when step failed, return prev obs
             return self._prev_obs, 0, True, self._prev_info
         else:
-            obs, info = self._process_raw_obs(raw_obs[0])
-            obs2, info2 = self._process_raw_obs(raw_obs[1])
-            full_info = [info, info2]
-            full_obs = [obs, obs2]
-            #print(full_obs)
-            self._prev_obs, self._prev_info = deepcopy(full_obs), deepcopy(full_info)
-            return full_obs, 0, self.is_terminated, full_info
+            if raw_obs is not None:
+                obs, info = self._process_raw_obs(raw_obs[0])
+                obs2, info2 = self._process_raw_obs(raw_obs[1])
+                full_info = [info, info2]
+                full_obs = [obs, obs2]
+                #print(full_obs)
+                self._prev_obs, self._prev_info = deepcopy(full_obs), deepcopy(full_info)
+                return full_obs, 0, self.is_terminated, full_info
+            else:
+                #print("no obs")
+                return self._prev_obs, 0, False, self._prev_info
+                
 
     def execute_cmd(self, cmd: str, action: Optional[dict] = None):
         """Execute a given string command.

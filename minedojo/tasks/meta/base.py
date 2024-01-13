@@ -124,6 +124,8 @@ class MetaTaskBase(gym.Wrapper):
             cur_info=info,
             elapsed_timesteps=self._elapsed_timesteps,
         )
+        if (self.env.is_terminated):
+            print("terminated")
         done = self.env.is_terminated or self._is_successful
         self._pre_info_dict = deepcopy(info)
         return obs, reward, done, info
