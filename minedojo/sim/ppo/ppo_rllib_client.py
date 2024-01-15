@@ -19,7 +19,7 @@ from ray.rllib.algorithms.ppo import PPOConfig
 from minedojo.sim.ppo.ppo_rllib import RllibPPOModel
 from ray.rllib.models import ModelCatalog
 from minedojo.sim.rllib.rllib import gen_trainer_from_params, save_trainer, load_trainer
-LOCAL_TESTING = False
+LOCAL_TESTING = True
 
 
 def _env_creator(env_config):
@@ -164,7 +164,6 @@ def my_config():
     # Name of directory to store training results in (stored in ~/ray_results/<experiment_name>)
 
     params_str = str(use_phi) + "_nw=%d_vf=%f_es=%f_en=%f_kl=%f" % (
-        num_workers,
         vf_loss_coeff,
         entropy_coeff_start,
         entropy_coeff_end,
