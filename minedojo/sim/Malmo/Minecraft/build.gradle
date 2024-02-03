@@ -13,10 +13,13 @@ buildscript {
             name = "sonatype"
             url = "https://oss.sonatype.org/content/repositories/snapshots/"
         }
+        maven {
+            url 'file:/MixinGradle-dcfaf61'
+        }
     }
     dependencies {
         classpath 'org.ow2.asm:asm:6.0'
-        classpath('com.github.SpongePowered:MixinGradle:dcfaf61'){ // 0.6
+        classpath('MixinGradle-dcfaf61:MixinGradle:dcfaf61'){ // 0.6
             // Because forgegradle requires 6.0 (not -debug-all) while mixingradle depends on 5.0
             // and putting mixin right here will place it before forge in the class loader
             exclude group: 'org.ow2.asm', module: 'asm-debug-all'
