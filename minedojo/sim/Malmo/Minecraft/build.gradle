@@ -14,7 +14,7 @@ buildscript {
             url = "https://oss.sonatype.org/content/repositories/snapshots/"
         }
         maven {
-            url 'file:/'
+            url 'file:/content/MineDojo/minedojo/sim/Malmo/Minecraft/MixinGradle-dcfaf61'
         }
     }
     dependencies {
